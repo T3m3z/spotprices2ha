@@ -1,0 +1,156 @@
+# Start pack for Spot Price control.
+# Version 0.1
+#
+# This is a copy-paste approach in order to get Finnish Electricity Spot Prices to Home Assistant.
+# Initial implementation by Temez but feel free to further develop this.
+# Special thanks to Mikki who has created the API where data is fetched. For more information see https://spot-hinta.fi/
+
+# This is just a loader for the data which is stored in sensor attributes. Template sensors present actual data.
+sensor:
+  - platform: rest
+    resource: https://api.spot-hinta.fi/TodayAndDayForward?HomeAssistant=true
+    name: SHF Electricity price
+    unique_id: shf_electricity_price
+    scan_interval: 604800 # 7 days, update logic is in the automation
+    value_template: 'OK' # static value as sensor is not updated regularly
+    json_attributes:
+      - "data"
+
+template:
+  - sensor:
+    - name: SHF Idx # Helper for other sensors to get correct price/rank from array
+      unique_id: shf_helper_idx
+      state: '{{ 0 if state_attr("sensor.shf_electricity_price", "data")[0]["DateTime"][8:10] | int == now().day else 24 }}'
+  - sensor:
+    - name: SHF Rank now
+      unique_id: shf_electricity_rank_now
+      unit_of_measurement: Rank
+      state: '{{ state_attr("sensor.shf_electricity_price", "data")[states("sensor.shf_idx")|int+now().hour]["Rank"] }}'
+  - sensor:
+    - name: SHF Electricity price now
+      unique_id: shf_electricity_price_now
+      unit_of_measurement: "€/kWh"
+      device_class: monetary
+      state: '{{ state_attr("sensor.shf_electricity_price", "data")[states("sensor.idx")|int+now().hour]["PriceWithTax"] }}'
+  - sensor:
+    - name: SHF Average price today
+      unique_id: shf_average_electricity_price
+      unit_of_measurement: "€/kWh"
+      device_class: monetary
+      state: '{{ (state_attr("sensor.shf_electricity_price", "data"))[states("sensor.shf_idx")|int:states("sensor.shf_idx")|int+24] | map(attribute="PriceWithTax") | list | average | round(3) }}'
+  - sensor:
+    - name: SHF Average price next hours
+      unique_id: shf_average_electricity_price_next_hours
+      unit_of_measurement: "€/kWh"
+      device_class: monetary
+      state: >
+            {% set idx = states("sensor.shf_idx")|int + now().hour + 1 %}
+            {{ (state_attr("sensor.shf_electricity_price", "data"))[idx:idx+states("input_number.shf_price_avg_slider")|int] | map(attribute="PriceWithTax") | list | average | round(3) }}
+  - sensor:
+    - name: SHF Cheapest period start helper
+      unique_id: shf_cheapest_period_start_helper
+      state: >
+            {% set output = namespace(value=[]) %}
+            {% set data = state_attr("sensor.shf_electricity_price", "data")[states("sensor.shf_idx")|int:] %}
+            {% set hours = states("input_number.shf_cheapest_period_slider") | int%}
+            {%- for inval in data[:min(-hours+1, -1)] -%}
+              {% set temp = namespace(value=[]) %}
+              {%- set j = loop.index -1 -%}
+              {%- for i in range(hours) %}
+                {%- set temp.value = temp.value + [data[j+i]["PriceWithTax"]] -%}
+              {%- endfor -%}
+              {%- set output.value = output.value + [temp.value | average | round(3)] -%}
+            {%- endfor -%}
+            {{ data[output.value.index(output.value|min)]["DateTime"] }}
+
+  - binary_sensor:
+    - name: "SHF Rank acceptable"
+      unique_id: shf_rank_acceptable
+      device_class: power
+      state: >
+            {% set value = state_attr("sensor.shf_electricity_price", "data")[states("sensor.shf_idx")|int+now().hour] %}
+            {{ value["Rank"] <= states("input_number.shf_rank_slider") | int }}
+  - binary_sensor:
+    - name: "SHF Price acceptable"
+      unique_id: shf_price_acceptable
+      device_class: power
+      state: >
+            {% set value = state_attr("sensor.shf_electricity_price", "data")[states("sensor.shf_idx")|int+now().hour] %}
+            {{ value["PriceWithTax"] <= states("input_number.shf_price_slider") | float }}
+  - binary_sensor:
+    - name: "SHF Price or Rank acceptable"
+      unique_id: shf_price_or_rank_acceptable
+      device_class: power
+      state: '{{ is_state("binary_sensor.shf_rank_acceptable", "on") or is_state("binary_sensor.shf_price_acceptable", "on") }}'
+
+input_number:
+  shf_rank_slider:
+    name: SHF Max Rank allowed
+    min: 1
+    max: 24
+    step: 1
+  shf_price_slider:
+    name: SHF Max Price allowed
+    min: 0
+    max: 4
+    step: 0.01
+    unit_of_measurement: €/kWh
+    icon: mdi:cash-lock
+    mode: box
+  shf_price_avg_slider:
+    name: SHF Average price hours
+    min: 1
+    max: 24
+    step: 1
+    unit_of_measurement: h
+    icon: mdi:cash-clock
+  shf_cheapest_period_slider:
+    name: SHF Cheapest period hours
+    min: 1
+    max: 24
+    step: 1
+    unit_of_measurement: h
+    icon: mdi:cash-clock
+
+input_datetime:
+  shf_cheapest_period_start:
+    name: SHF Cheapest period start
+    has_date: true
+    has_time: true
+
+#Automation for automatic updating of the sensor. Tries to reduce API load.
+automation:
+  - id: '1669453089221'
+    alias: Intelligent update of electricity price sensor
+    description: 'Tries to fetch new data every hour after 14 oclock local time. Condition stops unnecessary requests. Random delay disperses API calls.'
+    trigger:
+    - platform: time_pattern
+      hours: /1
+      alias: Trigger every hour
+    condition:
+    - condition: template
+      value_template: '{{ (states("sensor.shf_idx")| int > 0 or state_attr("sensor.shf_electricity_price", "data") | length <= 24) and now().hour >= 14 }}'
+      alias: Check if there isn't data for tomorrow and time is after 14 o'clock
+    action:
+    - delay: '{{ range(30, 300)|random }}'
+      alias: Random delay in order to reduce API congestion
+    - service: homeassistant.update_entity
+      alias: Trigger the update of the sensor
+      target:
+        entity_id: sensor.shf_electricity_price
+    mode: single
+  - id: '1669453089222'
+    alias: "Copy cheapest period to datetime sensor"
+    description: "Copies cheapest period start from helper to datetime sensor for easier automations."
+    mode: single
+    trigger:
+      - platform: state
+        entity_id:
+          - sensor.shf_cheapest_period_start_helper
+    condition: []
+    action:
+      - service: input_datetime.set_datetime
+        data:
+          datetime: '{{ states("sensor.shf_cheapest_period_start_helper")[:19] | replace("T", " ") }}'
+        target:
+          entity_id: input_datetime.shf_cheapest_period_start
