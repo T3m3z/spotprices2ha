@@ -4,7 +4,7 @@ Simple copy-paste approach to fetch data from api.spot-hinta.fi (see https://spo
 ## Installation instructions
 Please make sure that you have made backups of your current implementation. You can find instructional video here: https://www.youtube.com/watch?v=lC_MxbWsh5k
 
-Followint instructions are for HassOS. You are most probably running this if you have Raspberry PI installation.
+Following instructions are for HassOS. You are most probably running this if you have Raspberry PI installation.
 
 1. Install "File Editor" to be able to edit configuration files and upload configuration. Instructions can be found from here: https://www.home-assistant.io/getting-started/configuration/ Simplified version: Settings>Addons>press Add-on Store>"File Editor">Install>wait for installation to happen>add to sidebar by checking "Show in sidebar">start the add-on by pressing "Start">press Open Web UI. The main objective here is to get access to configuration files which can be achived also by SSH add-on.
 2. Press folder icon on top left. Check that you are in /config folder (or the folder containing "configuration.yaml" file). Upload spot-price.yaml here with buttons located top right.
