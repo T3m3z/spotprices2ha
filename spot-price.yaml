@@ -31,7 +31,7 @@ template:
       unique_id: shf_electricity_price_now
       unit_of_measurement: "€/kWh"
       device_class: monetary
-      state: '{{ state_attr("sensor.shf_electricity_price", "data")[states("sensor.idx")|int+now().hour]["PriceWithTax"] }}'
+      state: '{{ state_attr("sensor.shf_electricity_price", "data")[states("sensor.shf_idx")|int+now().hour]["PriceWithTax"] }}'
   - sensor:
     - name: SHF Average price today
       unique_id: shf_average_electricity_price
