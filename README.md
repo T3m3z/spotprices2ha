@@ -26,7 +26,7 @@ You can use slider "SHF Max Rank allowed" to determine how many of cheapest hour
 
 Sliders "SHF Max Rank allowed" to determine how many of cheapest hours of today you want to select. This controls sensor "SHF Rank acceptable".
 
-You can use sensor "SHF Cheapest period start" to run action at the start of cheapest N hours. See example below:
+You can use sensor "SHF Cheapest period start" to run action at the start of cheapest N hours. Number of hours can be set with slider "SHF Cheapest period hours". See example below:
 ![Example Time Trigger based on Datetime helper](/img/example-time-trigger.png)
 
 ## Misc
