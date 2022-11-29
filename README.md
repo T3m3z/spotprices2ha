@@ -42,6 +42,8 @@ After you have completed the installation, you can visualize the price data by i
 7. Copy code from [here](/apexchart-card-visualisations/current_electricity_price.yaml) to the left side of the dialog.
 8. Press save and enjoy.
 
+![Example Chart](/img/chart.png)
+
 ## Misc
 
 Sensors are prefixed with "SHF" to prevent collision with possibly pre-existing sensors in your HomeAssistant instance. SHF is derived from Spot-Hinta.Fi.
