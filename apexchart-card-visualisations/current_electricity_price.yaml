@@ -52,9 +52,11 @@ series:
     float_precision: 2
     stroke_width: 0
     data_generator: |
+      var currentTime = new Date().setMinutes(0, 0, 0);
+      let currentPrice = entity.attributes.data.find(d => {
+        return new Date(d["DateTime"]).getTime() === currentTime;
+      })["PriceWithTax"];
       return entity.attributes.data.map((d, index) => {
-        var currentIndex = new Date().getHours();
-        var currentPrice = entity.attributes.data[currentIndex]["PriceWithTax"];
         return [new Date(d["DateTime"]).getTime(), currentPrice*100];
       });
     color_threshold:
