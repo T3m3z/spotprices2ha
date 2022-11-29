@@ -1,0 +1,71 @@
+type: custom:apexcharts-card
+graph_span: 48h
+experimental:
+  color_threshold: true
+show:
+  last_updated: true
+header:
+  title: Electricity price (c/kWh)
+  show: true
+  show_states: true
+  colorize_states: true
+span:
+  start: day
+yaxis:
+  - min: 0
+    decimals: 2
+    apex_config:
+      forceNiceScale: true
+now:
+  show: true
+  label: Now
+series:
+  - entity: sensor.shf_electricity_price
+    show:
+      in_header: false
+      extremas: true
+    type: column
+    color: lightgray
+    float_precision: 2
+    data_generator: |
+      return entity.attributes.data.map((d, index) => {
+        return [new Date(d["DateTime"]).getTime(), entity.attributes.data[index]["PriceWithTax"]*100];
+      });
+    color_threshold:
+      - value: 0
+        color: 368f39
+      - value: 10
+        color: a3b34d
+      - value: 20
+        color: ffd57e
+      - value: 30
+        color: f18c56
+      - value: 40
+        color: de425b
+  - entity: sensor.shf_electricity_price
+    show:
+      in_header: true
+      header_color_threshold: true
+      in_chart: false
+    type: line
+    color: lightgray
+    float_precision: 2
+    stroke_width: 0
+    data_generator: |
+      return entity.attributes.data.map((d, index) => {
+        var currentIndex = new Date().getHours();
+        var currentPrice = entity.attributes.data[currentIndex]["PriceWithTax"];
+        return [new Date(d["DateTime"]).getTime(), currentPrice*100];
+      });
+    color_threshold:
+      - value: 0
+        color: 368f39
+      - value: 10
+        color: a3b34d
+      - value: 20
+        color: ffd57e
+      - value: 30
+        color: f18c56
+      - value: 40
+        color: de425b
+
