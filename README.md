@@ -29,6 +29,19 @@ Sliders "SHF Max Rank allowed" to determine how many of cheapest hours of today 
 You can use sensor "SHF Cheapest period start" to run action at the start of cheapest N hours. Number of hours can be set with slider "SHF Cheapest period hours". See example below:
 ![Example Time Trigger based on Datetime helper](/img/example-time-trigger.png)
 
+## Visualization of the price data
+
+After you have completed the installation, you can visualize the price data by installing chart code 
+
+1. Download apexcharts-card.js from here: https://github.com/RomRider/apexcharts-card/releases/tag/v2.0.1
+2. Access folder /config again by using File Editor. 
+3. Create a new folder called www and upload apexcharts-card.js to the newly created folder.
+4. Go to HomeAssistant "homepage" > press three dots at top right > Edit Dashboard > again press the three dots > Manage Resources.
+5. Press Add Resource. Fill in URL /local/apexcharts-card.js and choose "JavaScript Module". Press Update.
+6. Go to HomeAssistant "homepage" and make sure that you are in the edit mode (first part of step 4). Press Add Card > Search for "Manual" and select it.
+7. Copy code from [here](/apexchart-card-visualisations/current_electricity_price.yaml) to the left side of the dialog.
+8. Press save and enjoy.
+
 ## Misc
 
 Sensors are prefixed with "SHF" to prevent collision with possibly pre-existing sensors in your HomeAssistant instance. SHF is derived from Spot-Hinta.Fi.
