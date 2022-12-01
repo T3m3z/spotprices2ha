@@ -14,8 +14,8 @@ Following instructions are for HassOS. You are most probably running this if you
 3. Open file "configuration.yaml". Find row "homeassistant:" and edit following rows to be like this:
 ```yaml
 homeassistant: # Find this row and if it doesn't exists, you can copypaste this whole block to the file.
-  packages: # NEW AND IMPORTANT ROW, NOTE INTENDATION
-    pack_1: !include spot-price.yaml # NEW AND IMPORTANT ROW, NOTE INTENDATION
+  packages: # NEW AND IMPORTANT ROW, NOTE INDENTATION
+    pack_1: !include spot-price.yaml # NEW AND IMPORTANT ROW, NOTE INDENTATION
   # There might be code here. Leave it as is.
 ```
 4. Restart Home Assistant. Settings>System>top right Restart button.
