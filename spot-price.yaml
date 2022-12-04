@@ -1,5 +1,6 @@
+
 # Start pack for Spot Price control.
-# Version 0.1.1
+# Version 0.1
 #
 # This is a copy-paste approach in order to get Finnish Electricity Spot Prices to Home Assistant.
 # Initial implementation by Temez but feel free to further develop this.
@@ -32,12 +33,21 @@ template:
       unit_of_measurement: "€/kWh"
       device_class: monetary
       state: '{{ state_attr("sensor.shf_electricity_price", "data")[states("sensor.shf_idx")|int+now().hour]["PriceWithTax"] }}'
+      attributes:
+        today_prices: '{{ (state_attr("sensor.shf_electricity_price", "data"))[states("sensor.shf_idx")|int:states("sensor.shf_idx")|int+24] | map(attribute="PriceWithTax") | list }}'
+        tomorrow_prices: '{{ (state_attr("sensor.shf_electricity_price", "data"))[states("sensor.shf_idx")|int+24:] | map(attribute="PriceWithTax") | list }}'
+        today_min: '{{ state_attr("sensor.shf_electricity_price_now", "today_prices") | min }}'
+        today_avg: '{{ state_attr("sensor.shf_electricity_price_now", "today_prices") | average | round(4) }}'
+        today_max: '{{ state_attr("sensor.shf_electricity_price_now", "today_prices") | max }}'
+        tomorrow_min: '{{ state_attr("sensor.shf_electricity_price_now", "tomorrow_prices") | min | default("unknown") }}'
+        tomorrow_avg: '{{ state_attr("sensor.shf_electricity_price_now", "tomorrow_prices") | average("unknown") }}'
+        tomorrow_max: '{{ state_attr("sensor.shf_electricity_price_now", "tomorrow_prices") | max | default("unknown") }}'
   - sensor:
     - name: SHF Average price today
       unique_id: shf_average_electricity_price
       unit_of_measurement: "€/kWh"
       device_class: monetary
-      state: '{{ (state_attr("sensor.shf_electricity_price", "data"))[states("sensor.shf_idx")|int:states("sensor.shf_idx")|int+24] | map(attribute="PriceWithTax") | list | average | round(3) }}'
+      state: '{{ state_attr("sensor.shf_electricity_price_now", "today_avg") }}'
   - sensor:
     - name: SHF Average price next hours
       unique_id: shf_average_electricity_price_next_hours
