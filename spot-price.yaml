@@ -1,6 +1,6 @@
 
 # Start pack for Spot Price control.
-# Version 0.1.3
+# Version 0.1.4
 #
 # This is a copy-paste approach in order to get Finnish Electricity Spot Prices to Home Assistant.
 # Initial implementation by Temez but feel free to further develop this.
@@ -72,7 +72,27 @@ template:
               {%- set output.value = output.value + [temp.value | average | round(3)] -%}
             {%- endfor -%}
             {{ data[output.value.index(output.value|min)]["DateTime"] }}
-
+  - sensor:
+    - name: SHF Control Factor 0-1
+      unique_id: shf_control_factor_0-1
+      unit_of_measurement: factor
+      icon: mdi:gauge
+      state: '{{ states("sensor.shf_control_factor_1") | float /2 + 0.5 }}'
+  - sensor:
+    - name: SHF Control Factor +-1
+      unique_id: shf_control_factor_+-1
+      unit_of_measurement: factor
+      icon: mdi:gauge
+      state: >
+            {% set pnow = states("sensor.shf_electricity_price_now") | float %}
+            {% set pmin = state_attr("sensor.shf_electricity_price_now", "today_min") | float %}
+            {% set pmax = state_attr("sensor.shf_electricity_price_now", "today_max") | float %}
+            {% set value = max(min((2*(pmax - pnow) / (pmax - pmin)-1) * states('input_number.shf_control_function_factor') | float,1),-1) %}
+            {% if states("input_select.shf_control_function" ) == "Linear"  %}
+            {{ value | round(2) }}
+            {% else %}
+            {{ sin(value*pi/2) | round(2) }}
+            {% endif %}
   - binary_sensor:
     - name: "SHF Rank acceptable"
       unique_id: shf_rank_acceptable
@@ -93,7 +113,22 @@ template:
       device_class: power
       state: '{{ is_state("binary_sensor.shf_rank_acceptable", "on") or is_state("binary_sensor.shf_price_acceptable", "on") }}'
 
+input_select:
+  shf_control_function:
+    name: SHF Control Function
+    options:
+      - Linear
+      - Sinusoidal
+    icon: mdi:gauge
+
 input_number:
+  shf_control_function_factor:
+    name: SHF Control Function Factor
+    min: 1
+    max: 3
+    step: 0.01
+    icon: mdi:gauge
+    mode: box
   shf_rank_slider:
     name: SHF Max Rank allowed
     min: 1
@@ -121,6 +156,11 @@ input_number:
     step: 1
     unit_of_measurement: h
     icon: mdi:cash-clock
+  shf_control_factor:
+    name: SHF Control Factor
+    min: 0
+    max: 1000
+    mode: box
 
 input_datetime:
   shf_cheapest_period_start:

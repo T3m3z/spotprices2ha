@@ -22,12 +22,13 @@ homeassistant: # Find this row and if it doesn't exists, you can copypaste this 
 
 ## Automation ideas
 
-You can use slider "SHF Max Rank allowed" to determine how many of cheapest hours of today you want to select. This controls sensor "SHF Rank acceptable". SImilarly slider "SHF Max Price allowed" controls sensor "SHF Price Acceptable". Combination of these two sensors is presented as sensor "SHF Price or Rank acceptable".
-
-Sliders "SHF Max Rank allowed" to determine how many of cheapest hours of today you want to select. This controls sensor "SHF Rank acceptable".
-
-You can use sensor "SHF Cheapest period start" to run action at the start of cheapest N hours. Number of hours can be set with slider "SHF Cheapest period hours". See example below:
-![Example Time Trigger based on Datetime helper](/img/example-time-trigger.png)
+| Use Case / "I want to..."| What sensor to use |
+| --- | --- |
+| ... allow/turn on device during cheapest n hours of the day | Set value of *SHF Max Rank allowed* and use sensor *SHF Rank acceptable* in automations. |
+| ... allow/turn on device when price is below X €/kWh | Set value of *SHF Max Price allowed* and use sensor *SHF Price acceptable* in automations. |
+| ... allow/turn on device when price is below X €/kWh or during cheapest n hours of the day | Set value of *SHF Max Price allowed* and *SHF Max Rank allowed*. Then use sensor *SHF Price or Rank acceptable* in automations. |
+| ... allow/turn on device when cheapest adjacent n hours starts (today or tomorrow)  | Set value of *SHF Cheapest period hours*. Then use sensor *SHF Cheapest period start* in automations. ![Example Time Trigger based on Datetime helper](/img/example-time-trigger.png) |
+| ... continuously control for example a thermostat temperature during the day based on relative difference to the max price of today | Use either sensor *SHF Control Factor 0-1* (outputs number between 0 and 1) or sensor *SHF Control Factor +-1* (outputs number between -1 and +1). You can see the difference between Rank and control factors in the following image. ![Rank versus control factor](/img/rank-versus-controlfactor.png) An example of automation action could be something like this: ![Automation action](/img/continuous-control.png) |
 
 ## Visualization of the price data
 
