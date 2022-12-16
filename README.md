@@ -48,3 +48,7 @@ After you have completed the installation, you can visualize the price data by i
 ## Misc
 
 Sensors are prefixed with "SHF" to prevent collision with possibly pre-existing sensors in your HomeAssistant instance. SHF is derived from Spot-Hinta.Fi.
+
+# Disclaimer
+
+This package is a hobby project. I cannot guarantee that is works every time correctly and works in every situation as expected. There are most probably some bugs. You use this package at your own risk.
