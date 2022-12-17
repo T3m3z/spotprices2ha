@@ -1,6 +1,6 @@
 
 # Start pack for Spot Price control.
-# Version 0.1.4
+# Version 0.1.5
 #
 # This is a copy-paste approach in order to get Finnish Electricity Spot Prices to Home Assistant.
 # Initial implementation by Temez but feel free to further develop this.
@@ -77,22 +77,35 @@ template:
       unique_id: shf_control_factor_0-1
       unit_of_measurement: factor
       icon: mdi:gauge
-      state: '{{ states("sensor.shf_control_factor_1") | float /2 + 0.5 }}'
+      state: '{{ (states("sensor.shf_control_factor_1") | float /2 + 0.5) | default("Unknown") }}'
+      attributes:
+        today_values: >
+            {% set output = namespace(value=[]) %}
+            {% for value in state_attr("sensor.shf_control_factor_1", "today_values") %}
+                {% set output.value = output.value + [ value | float /2 + 0.5 ] %}
+            {% endfor %}
+            {{ output.value }}
+
   - sensor:
     - name: SHF Control Factor +-1
       unique_id: shf_control_factor_+-1
       unit_of_measurement: factor
       icon: mdi:gauge
-      state: >
-            {% set pnow = states("sensor.shf_electricity_price_now") | float %}
-            {% set pmin = state_attr("sensor.shf_electricity_price_now", "today_min") | float %}
-            {% set pmax = state_attr("sensor.shf_electricity_price_now", "today_max") | float %}
-            {% set value = max(min((2*(pmax - pnow) / (pmax - pmin)-1) * states('input_number.shf_control_function_factor') | float,1),-1) %}
-            {% if states("input_select.shf_control_function" ) == "Linear"  %}
-            {{ value | round(2) }}
-            {% else %}
-            {{ sin(value*pi/2) | round(2) }}
-            {% endif %}
+      state: '{{ state_attr("sensor.shf_control_factor_1", "today_values")[now().hour] | default("Unknown") }}'
+      attributes:
+        today_values: >
+            {% set output = namespace(value=[]) %}
+            {% for pnow in state_attr("sensor.shf_electricity_price_now", "today_prices") %}
+              {% set pmin = state_attr("sensor.shf_electricity_price_now", "today_min") | float %}
+              {% set pmax = state_attr("sensor.shf_electricity_price_now", "today_max") | float %}
+              {% set value = max(min((2*(pmax - pnow) / (pmax - pmin)-1) * states('input_number.shf_control_function_factor') | float,1),-1) %}
+              {% if states("input_select.shf_control_function" ) == "Linear"  %}
+                {% set output.value = output.value + [value | round(2)] %}
+              {% else %}
+                {% set output.value = output.value + [sin(value*pi/2) | round(2)] %}
+              {% endif %}
+            {% endfor %}
+            {{ output.value }}
   - binary_sensor:
     - name: "SHF Rank acceptable"
       unique_id: shf_rank_acceptable
