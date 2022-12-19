@@ -32,10 +32,20 @@ template:
       unique_id: shf_electricity_price_now
       unit_of_measurement: "€/kWh"
       device_class: monetary
-      state: '{{ state_attr("sensor.shf_electricity_price", "data")[states("sensor.shf_idx")|int+now().hour]["PriceWithTax"] }}'
+      state: '{{ state_attr("sensor.shf_electricity_price_now", "today_prices")[now().hour] }}'
       attributes:
-        today_prices: '{{ (state_attr("sensor.shf_electricity_price", "data"))[states("sensor.shf_idx")|int:states("sensor.shf_idx")|int+24] | map(attribute="PriceWithTax") | list }}'
-        tomorrow_prices: '{{ (state_attr("sensor.shf_electricity_price", "data"))[states("sensor.shf_idx")|int+24:] | map(attribute="PriceWithTax") | list }}'
+        all_prices: >
+                   {% set output = namespace(value=[]) %}
+                   {% for value in (state_attr("sensor.shf_electricity_price", "data")) | map(attribute="PriceWithTax") | list %}
+                     {% if ((loop.index - 1) % 24) >= state_attr("input_datetime.shf_price2_start", "hour") and ((loop.index - 1) % 24) < state_attr("input_datetime.shf_price2_stop", "hour") %}
+                       {% set output.value = output.value + [ value + states('input_number.shf_price2_slider') | float] %}
+                     {% else %}
+                       {% set output.value = output.value + [ value + states('input_number.shf_price1_slider') | float] %}
+                     {% endif %}
+                   {% endfor %}
+                   {{ output.value }}
+        today_prices: '{{ (state_attr("sensor.shf_electricity_price_now", "all_prices"))[states("sensor.shf_idx")|int:states("sensor.shf_idx")|int+24] | list }}'
+        tomorrow_prices: '{{ (state_attr("sensor.shf_electricity_price_now", "all_prices"))[states("sensor.shf_idx")|int+24:] | list }}'
         today_min: '{{ state_attr("sensor.shf_electricity_price_now", "today_prices") | min }}'
         today_avg: '{{ state_attr("sensor.shf_electricity_price_now", "today_prices") | average | round(4) }}'
         today_max: '{{ state_attr("sensor.shf_electricity_price_now", "today_prices") | max }}'
@@ -55,23 +65,24 @@ template:
       device_class: monetary
       state: >
             {% set idx = states("sensor.shf_idx")|int + now().hour + 1 %}
-            {{ (state_attr("sensor.shf_electricity_price", "data"))[idx:idx+states("input_number.shf_price_avg_slider")|int] | map(attribute="PriceWithTax") | list | average | round(3) }}
+            {{ (state_attr("sensor.shf_electricity_price_now", "all_prices"))[idx:idx+states("input_number.shf_price_avg_slider")|int] | average | round(3) }}
   - sensor:
     - name: SHF Cheapest period start helper
       unique_id: shf_cheapest_period_start_helper
       state: >
             {% set output = namespace(value=[]) %}
-            {% set data = state_attr("sensor.shf_electricity_price", "data")[states("sensor.shf_idx")|int:] %}
+            {% set data = state_attr("sensor.shf_electricity_price_now", "all_prices")[states("sensor.shf_idx")|int:] %}
             {% set hours = states("input_number.shf_cheapest_period_slider") | int%}
             {%- for inval in data[:min(-hours+1, -1)] -%}
               {% set temp = namespace(value=[]) %}
               {%- set j = loop.index -1 -%}
               {%- for i in range(hours) %}
-                {%- set temp.value = temp.value + [data[j+i]["PriceWithTax"]] -%}
+                {%- set temp.value = temp.value + [data[j+i]] -%}
               {%- endfor -%}
               {%- set output.value = output.value + [temp.value | average | round(3)] -%}
             {%- endfor -%}
-            {{ data[output.value.index(output.value|min)]["DateTime"] }}
+            {% set data2 = state_attr("sensor.shf_electricity_price", "data")[states("sensor.shf_idx")|int:] %}
+            {{ data2[output.value.index(output.value|min)]["DateTime"] }}
   - sensor:
     - name: SHF Control Factor 0-1
       unique_id: shf_control_factor_0-1
@@ -118,8 +129,8 @@ template:
       unique_id: shf_price_acceptable
       device_class: power
       state: >
-            {% set value = state_attr("sensor.shf_electricity_price", "data")[states("sensor.shf_idx")|int+now().hour] %}
-            {{ value["PriceWithTax"] <= states("input_number.shf_price_slider") | float }}
+            {% set value = state_attr("sensor.shf_electricity_price_now", "today_prices")[ now().hour ] %}
+            {{ value <= states("input_number.shf_price_slider") | float }}
   - binary_sensor:
     - name: "SHF Price or Rank acceptable"
       unique_id: shf_price_or_rank_acceptable
@@ -174,11 +185,35 @@ input_number:
     min: 0
     max: 1000
     mode: box
+  shf_price1_slider:
+    name: SHF Price1
+    min: 0
+    max: 1000
+    step: 0.0001
+    unit_of_measurement: €
+    icon: mdi:cash-lock
+    mode: box
+  shf_price2_slider:
+    name: SHF Price2
+    min: 0
+    max: 1000
+    step: 0.0001
+    unit_of_measurement: €
+    icon: mdi:cash-lock
+    mode: box
 
 input_datetime:
   shf_cheapest_period_start:
     name: SHF Cheapest period start
     has_date: true
+    has_time: true
+  shf_price2_start:
+    name: SHF Price2 start
+    has_date: false
+    has_time: true
+  shf_price2_stop:
+    name: SHF Price2 stop
+    has_date: false
     has_time: true
 
 #Automation for automatic updating of the sensor. Tries to reduce API load.
