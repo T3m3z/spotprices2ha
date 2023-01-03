@@ -30,6 +30,12 @@ homeassistant: # Find this row and if it doesn't exists, you can copypaste this 
 | ... allow/turn on device when cheapest adjacent n hours starts (today or tomorrow)  | Set value of *SHF Cheapest period hours*. Then use sensor *SHF Cheapest period start* in automations. ![Example Time Trigger based on Datetime helper](/img/example-time-trigger.png) |
 | ... continuously control for example a thermostat temperature during the day based on relative difference to the max price of today | Use either sensor *SHF Control Factor 0-1* (outputs number between 0 and 1) or sensor *SHF Control Factor +-1* (outputs number between -1 and +1). You can see the difference between Rank and control factors in the following image. ![Rank versus control factor](/img/rank-versus-controlfactor.PNG) An example of automation action could be something like this: ![Automation action](/img/continuous-control.png) |
 
+## Margin and transmission fees
+
+If you want, you can add transmission and other extra fees to the spot prices.
+
+![Controlling of extra fees](/img/extra-fees.PNG)
+
 ## Visualization of the price data
 
 After you have completed the installation, you can visualize the price data by installing chart code 
