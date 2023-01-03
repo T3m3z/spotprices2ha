@@ -1,6 +1,6 @@
 
 # Start pack for Spot Price control.
-# Version 0.1.6
+# Version 0.1.7
 #
 # This is a copy-paste approach in order to get Finnish Electricity Spot Prices to Home Assistant.
 # Initial implementation by Temez but feel free to further develop this.
@@ -220,17 +220,17 @@ input_datetime:
 automation:
   - id: '1669453089221'
     alias: Intelligent update of electricity price sensor
-    description: 'Tries to fetch new data every hour after 14 oclock local time. Condition stops unnecessary requests. Random delay disperses API calls.'
+    description: 'Tries to fetch new data every 15mins after 14 oclock local time. Condition stops unnecessary requests. Random delay disperses API calls.'
     trigger:
     - platform: time_pattern
-      hours: /1
-      alias: Trigger every hour
+      minutes: /15
+      alias: Trigger every 15mins
     condition:
     - condition: template
-      value_template: '{{ is_state("sensor.shf_electricity_price", "unavailable") or (now().hour >= 14 and (states("sensor.shf_idx") | int > 0 or state_attr("sensor.shf_electricity_price", "data") | length <= 24)) }}'
+      value_template: '{{ is_state("sensor.shf_electricity_price", "unavailable") or is_state("sensor.shf_idx", "unavailable") or (now().hour >= 14 and (states("sensor.shf_idx") | int > 0 or state_attr("sensor.shf_electricity_price", "data") | length <= 24)) }}'
       alias: Check if there isn't data for tomorrow and time is after 14 o'clock
     action:
-    - delay: '{{ range(30, 300)|random }}'
+    - delay: '{{ range(60, 600)|random }}'
       alias: Random delay in order to reduce API congestion
     - service: homeassistant.update_entity
       alias: Trigger the update of the sensor
