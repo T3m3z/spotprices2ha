@@ -58,7 +58,7 @@ series:
         color: f18c56
       - value: 40
         color: de425b
-  - entity: sensor.shf_electricity_price
+  - entity: sensor.shf_electricity_price_now
     show:
       in_header: true
       header_color_threshold: true
@@ -67,15 +67,8 @@ series:
     color: lightgray
     float_precision: 2
     stroke_width: 0
+    transform: "return x*100"
     unit: c/kWh
-    data_generator: |
-      var currentTime = new Date().setMinutes(0, 0, 0);
-      let currentPrice = entity.attributes.data.find(d => {
-        return new Date(d["DateTime"]).getTime() === currentTime;
-      })["PriceWithTax"];
-      return entity.attributes.data.map((d, index) => {
-        return [new Date(d["DateTime"]).getTime(), currentPrice*100];
-      });
     color_threshold:
       - value: 0
         color: 368f39
