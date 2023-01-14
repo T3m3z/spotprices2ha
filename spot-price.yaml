@@ -16,6 +16,14 @@ sensor:
     value_template: 'OK' # static value as sensor is not updated regularly
     json_attributes:
       - "data"
+  - platform: statistics
+    name: "SHF Average 7 Days"
+    entity_id: sensor.shf_electricity_price_now
+    state_characteristic: mean
+    unique_id: shf_average_7days
+    precision: 4
+    max_age:
+      days: 7
 
 template:
   - sensor:
