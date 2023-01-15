@@ -72,7 +72,7 @@ template:
       unique_id: shf_cheapest_period_start_helper
       state: >
             {% set output = namespace(value=[]) %}
-            {% set data = state_attr("sensor.shf_electricity_price_now", "all_prices")[states("sensor.shf_idx")|int:] %}
+            {% set data = state_attr("sensor.shf_electricity_price_now", "all_prices")[15:39] %}
             {% set hours = states("input_number.shf_cheapest_period_slider") | int%}
             {%- for inval in data[:min(-hours+1, -1)] -%}
               {% set temp = namespace(value=[]) %}
@@ -82,7 +82,7 @@ template:
               {%- endfor -%}
               {%- set output.value = output.value + [temp.value | average | round(3)] -%}
             {%- endfor -%}
-            {% set data2 = state_attr("sensor.shf_electricity_price_now", "data")[states("sensor.shf_idx")|int:] %}
+            {% set data2 = state_attr("sensor.shf_electricity_price_now", "data")[15:39] %}
             {{ data2[output.value.index(output.value|min)]["DateTime"] }}
   - sensor:
     - name: SHF Control Factor 0-1
