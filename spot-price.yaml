@@ -1,6 +1,6 @@
 
 # Start pack for Spot Price control.
-# Version 0.1.7
+# Version 0.1.8
 #
 # This is a copy-paste approach in order to get Finnish Electricity Spot Prices to Home Assistant.
 # Initial implementation by Temez but feel free to further develop this.
@@ -16,6 +16,14 @@ sensor:
     value_template: 'OK' # static value as sensor is not updated regularly
     json_attributes:
       - "data"
+  - platform: statistics
+    name: "SHF Average Price 7 Days"
+    entity_id: sensor.shf_electricity_price_now
+    state_characteristic: mean
+    unique_id: shf_average_7days
+    precision: 4
+    max_age:
+      days: 7
 
 template:
   - sensor:

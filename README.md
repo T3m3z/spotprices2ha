@@ -55,6 +55,20 @@ After you have completed the installation, you can visualize the price data by i
 
 Sensors are prefixed with "SHF" to prevent collision with possibly pre-existing sensors in your HomeAssistant instance. SHF is derived from Spot-Hinta.Fi.
 
+# Version history
+
+| Version | New features/notes |
+| --- | --- |
+| 0.1.8 | Add sensor for 7 day average price. |
+| 0.1.7 | Bug fixes in order to ensure smooth data load. |
+| 0.1.6 | Added price margins in order to add transmission fees to the prices.  |
+| 0.1.5 | Adds attributes to sensors "SHF Control Factor 0-1" and "SHF Control Factor +-1" to allow charting future control. |
+| 0.1.4 | Initial implementation for sensors "SHF Control Factor 0-1" and "SHF Control Factor +-1" to allow continuous control.  |
+| 0.1.3 | Fixed bug in data loading which could prevent loading of the new prices.  |
+| 0.1.2 | Sensor "SHF Electricity Price Now" has now attributes (for example today average price) which can be used in charts etc.  |
+| 0.1.1 | Breaking change: add SHF prefix to all sensors etc. |
+| 0.1 | Initial version |
+
 # Disclaimer
 
-This package is a hobby project. I cannot guarantee that is works every time correctly and works in every situation as expected. There are most probably some bugs. You use this package at your own risk.
+This package is a hobby project. I cannot guarantee that is works every time correctly and works in every situation as expected. There are most probably some bugs. You use this package at your own risk. Test what happens to your automatiosn if your network connection is down and new prices aren't updated accordingly.

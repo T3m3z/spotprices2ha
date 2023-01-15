@@ -5,7 +5,7 @@ experimental:
 show:
   last_updated: true
 header:
-  title: Electricity price (c/kWh)
+  title: Electricity price
   show: true
   show_states: true
   colorize_states: true
@@ -20,16 +20,32 @@ now:
   show: true
   label: Now
 series:
-  - entity: sensor.shf_electricity_price
+  - entity: sensor.shf_electricity_price_now
+    name: Average Price
+    unit: c/kWh
+    show:
+      in_header: false
+      extremas: false
+    type: line
+    color: blue
+    float_precision: 2
+    stroke_width: 2
+    data_generator: >
+      return [[start, entity.attributes.today_avg*100], [moment(end).subtract(1,
+      'days'), entity.attributes.today_avg*100], []];
+  - entity: sensor.shf_electricity_price_now
     show:
       in_header: false
       extremas: true
+      legend_value: false
     type: column
     color: lightgray
     float_precision: 2
+    unit: c/kWh
     data_generator: |
-      return entity.attributes.data.map((d, index) => {
-        return [new Date(d["DateTime"]).getTime(), entity.attributes.data[index]["PriceWithTax"]*100];
+      var n = new Date(entity.attributes.data[0]["DateTime"]);
+      return entity.attributes.all_prices.map((d, index) => {
+        return [n.getTime()+index*3600000, entity.attributes.all_prices[index]*100];
       });
     color_threshold:
       - value: 0
@@ -42,7 +58,7 @@ series:
         color: f18c56
       - value: 40
         color: de425b
-  - entity: sensor.shf_electricity_price
+  - entity: sensor.shf_electricity_price_now
     show:
       in_header: true
       header_color_threshold: true
@@ -51,14 +67,8 @@ series:
     color: lightgray
     float_precision: 2
     stroke_width: 0
-    data_generator: |
-      var currentTime = new Date().setMinutes(0, 0, 0);
-      let currentPrice = entity.attributes.data.find(d => {
-        return new Date(d["DateTime"]).getTime() === currentTime;
-      })["PriceWithTax"];
-      return entity.attributes.data.map((d, index) => {
-        return [new Date(d["DateTime"]).getTime(), currentPrice*100];
-      });
+    transform: "return x*100"
+    unit: c/kWh
     color_threshold:
       - value: 0
         color: 368f39
@@ -70,4 +80,3 @@ series:
         color: f18c56
       - value: 40
         color: de425b
-
