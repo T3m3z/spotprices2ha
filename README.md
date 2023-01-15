@@ -59,6 +59,7 @@ Sensors are prefixed with "SHF" to prevent collision with possibly pre-existing 
 
 | Version | New features/notes |
 | --- | --- |
+| 0.1.9 | Fix for "SHF Cheapest Period Start". Calculates now cheapest period between today 15 o'clock and tomorrow 15 o'clock. Ensures that there is one period during 24 hours and can utilize periods spanning on two separate days (for example starting at 23 o'clock). |
 | 0.1.8 | Add sensor for 7 day average price. |
 | 0.1.7 | Bug fixes in order to ensure smooth data load. |
 | 0.1.6 | Added price margins in order to add transmission fees to the prices.  |
