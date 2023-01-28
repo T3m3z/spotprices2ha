@@ -1,6 +1,6 @@
 
 # Start pack for Spot Price control.
-# Version 0.1.9
+# Version 0.1.10
 #
 # This is a copy-paste approach in order to get Finnish Electricity Spot Prices to Home Assistant.
 # Initial implementation by Temez but feel free to further develop this.
@@ -88,7 +88,7 @@ template:
               {%- for i in range(hours) %}
                 {%- set temp.value = temp.value + [data[j+i]] -%}
               {%- endfor -%}
-              {%- set output.value = output.value + [temp.value | average | round(3)] -%}
+              {%- set output.value = output.value + [temp.value | average] -%}
             {%- endfor -%}
             {% set data2 = state_attr("sensor.shf_electricity_price_now", "data")[15:39] %}
             {{ data2[output.value.index(output.value|min)]["DateTime"] }}
