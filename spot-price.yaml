@@ -1,6 +1,6 @@
 
 # Start pack for Spot Price control.
-# Version 0.1.10
+# Version 0.1.11
 #
 # This is a copy-paste approach in order to get Finnish Electricity Spot Prices to Home Assistant.
 # Initial implementation by Temez but feel free to further develop this.
@@ -40,7 +40,7 @@ template:
       unique_id: shf_electricity_price_now
       unit_of_measurement: "€/kWh"
       device_class: monetary
-      state: '{{ state_attr("sensor.shf_electricity_price_now", "today_prices")[now().hour] }}'
+      state: '{{ state_attr("sensor.shf_electricity_price_now", "today_prices")[now().hour] | default(none) }}'
       attributes:
         data: '{{ state_attr("sensor.shf_electricity_price", "data") if  state_attr("sensor.shf_electricity_price", "data") else state_attr("sensor.shf_electricity_price_now", "data") }}'
         all_prices: >
@@ -58,9 +58,9 @@ template:
         today_min: '{{ state_attr("sensor.shf_electricity_price_now", "today_prices") | min }}'
         today_avg: '{{ state_attr("sensor.shf_electricity_price_now", "today_prices") | average | round(4) }}'
         today_max: '{{ state_attr("sensor.shf_electricity_price_now", "today_prices") | max }}'
-        tomorrow_min: '{{ state_attr("sensor.shf_electricity_price_now", "tomorrow_prices") | min | default("unknown") }}'
-        tomorrow_avg: '{{ state_attr("sensor.shf_electricity_price_now", "tomorrow_prices") | average("unknown") }}'
-        tomorrow_max: '{{ state_attr("sensor.shf_electricity_price_now", "tomorrow_prices") | max | default("unknown") }}'
+        tomorrow_min: '{{ state_attr("sensor.shf_electricity_price_now", "tomorrow_prices") | min | default(none) }}'
+        tomorrow_avg: '{{ state_attr("sensor.shf_electricity_price_now", "tomorrow_prices") | average(none) }}'
+        tomorrow_max: '{{ state_attr("sensor.shf_electricity_price_now", "tomorrow_prices") | max | default(none) }}'
   - sensor:
     - name: SHF Average price today
       unique_id: shf_average_electricity_price
@@ -97,7 +97,7 @@ template:
       unique_id: shf_control_factor_0-1
       unit_of_measurement: factor
       icon: mdi:gauge
-      state: '{{ (states("sensor.shf_control_factor_1") | float /2 + 0.5) | default("Unknown") }}'
+      state: '{{ (states("sensor.shf_control_factor_1") | float /2 + 0.5) | default(none) }}'
       attributes:
         today_values: >
             {% set output = namespace(value=[]) %}
@@ -111,7 +111,7 @@ template:
       unique_id: shf_control_factor_+-1
       unit_of_measurement: factor
       icon: mdi:gauge
-      state: '{{ state_attr("sensor.shf_control_factor_1", "today_values")[now().hour] | default("Unknown") }}'
+      state: '{{ state_attr("sensor.shf_control_factor_1", "today_values")[now().hour] | default(none) }}'
       attributes:
         today_values: >
             {% set output = namespace(value=[]) %}
