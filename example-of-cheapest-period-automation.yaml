@@ -1,0 +1,17 @@
+alias: SHF - Get cheapest period
+trigger:
+  - platform: time
+    at: "16:55:00"
+action:
+  - service: script.cheapest_hours
+    data:
+      start: "{{ now() }}"
+      stop: "{{ now() + timedelta(hours=12)}}"
+      hours: 3
+    response_variable: result
+  - service: input_datetime.set_datetime
+    data:
+      timestamp: "{{ result['start'] }}"
+    target:
+      entity_id: input_datetime.time_helper
+mode: single
