@@ -40,7 +40,7 @@ If you want, you can add transmission and other extra fees to the spot prices.
 
 After you have completed the installation, you can visualize the price data by installing chart code 
 
-1. Download apexcharts-card.js from here: https://github.com/RomRider/apexcharts-card/releases/tag/v2.0.1
+1. Download apexcharts-card.js from here: https://github.com/RomRider/apexcharts-card/releases
 2. Access folder /config again by using File Editor. 
 3. Create a new folder called www and upload apexcharts-card.js to the newly created folder.
 4. Go to HomeAssistant "homepage" > press three dots at top right > Edit Dashboard > again press the three dots > Manage Resources.
