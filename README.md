@@ -27,7 +27,7 @@ homeassistant: # Find this row and if it doesn't exists, you can copypaste this 
 | ... allow/turn on device during cheapest n hours of the day | Set value of *SHF Max Rank allowed* and use sensor *SHF Rank acceptable* in automations. |
 | ... allow/turn on device when price is below X €/kWh | Set value of *SHF Max Price allowed* and use sensor *SHF Price acceptable* in automations. |
 | ... allow/turn on device when price is below X €/kWh or during cheapest n hours of the day | Set value of *SHF Max Price allowed* and *SHF Max Rank allowed*. Then use sensor *SHF Price or Rank acceptable* in automations. |
-| ... allow/turn on device when cheapest adjacent n hours starts (today or tomorrow)  | Set value of *SHF Cheapest period hours*. Then use sensor *SHF Cheapest period start* in automations. ![Example Time Trigger based on Datetime helper](/img/example-time-trigger.png) |
+| ... allow/turn on device when cheapest adjacent n hours starts (today or tomorrow)  | Create a new time helper (Settings->Devices&Services->Helpers->Create Helper->"Date and/or time" + select "Time"). Create automation which updates this helper (see example-of-cheapest-period-automation.yaml for an example). Then use the newly created helper in automations. ![Example Time Trigger based on Datetime helper](/img/example-time-trigger.png) |
 | ... continuously control for example a thermostat temperature during the day based on relative difference to the max price of today | Use either sensor *SHF Control Factor 0-1* (outputs number between 0 and 1) or sensor *SHF Control Factor +-1* (outputs number between -1 and +1). You can see the difference between Rank and control factors in the following image. ![Rank versus control factor](/img/rank-versus-controlfactor.PNG) An example of automation action could be something like this: ![Automation action](/img/continuous-control.png) |
 
 ## Margin and transmission fees
@@ -59,6 +59,7 @@ Sensors are prefixed with "SHF" to prevent collision with possibly pre-existing 
 
 | Version | New features/notes |
 | --- | --- |
+| 0.2.0 | Major rework of the code to address daylight saving time related problems. Reduces errors on System->Logs. New feature: Script can be used to get variable length "cheapest period" with configurable start and end times. Breaking changes: old "SHF Cheapest Period Start" removed due to adding new script based approach. |
 | 0.1.11 | Bugfix as the code was not compatible with HomeAssistant 2023.05+ |
 | 0.1.10 | Fixed rounding error with "SHF Cheapest Period Start". Old code rounded values to 1/10ths of a cent and sometimes this wasn't precise enough causing wrong hour to be selected. |
 | 0.1.9 | Fix for "SHF Cheapest Period Start". Calculates now cheapest period between today 15 o'clock and tomorrow 15 o'clock. Ensures that there is one period during 24 hours and can utilize periods spanning on two separate days (for example starting at 23 o'clock). |
@@ -74,4 +75,4 @@ Sensors are prefixed with "SHF" to prevent collision with possibly pre-existing 
 
 # Disclaimer
 
-This package is a hobby project. I cannot guarantee that is works every time correctly and works in every situation as expected. There are most probably some bugs. You use this package at your own risk. Test what happens to your automatiosn if your network connection is down and new prices aren't updated accordingly.
+This package is a hobby project. I cannot guarantee that is works every time correctly and works in every situation as expected. There are most probably some bugs. You use this package at your own risk. Test what happens to your automation if your network connection is down and new prices aren't updated accordingly.

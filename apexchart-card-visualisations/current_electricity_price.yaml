@@ -43,9 +43,8 @@ series:
     float_precision: 2
     unit: c/kWh
     data_generator: |
-      var n = new Date(entity.attributes.data[0]["DateTime"]);
-      return entity.attributes.all_prices.map((d, index) => {
-        return [n.getTime()+index*3600000, entity.attributes.all_prices[index]*100];
+      return entity.attributes.data.map((d, index) => {
+        return [d["Timestamp"]*1000, d["TotalPrice"]*100];
       });
     color_threshold:
       - value: 0

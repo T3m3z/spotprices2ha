@@ -1,6 +1,6 @@
 
 # Start pack for Spot Price control.
-# Version 0.1.11
+# Version 0.2.0
 #
 # This is a copy-paste approach in order to get Finnish Electricity Spot Prices to Home Assistant.
 # Initial implementation by Temez but feel free to further develop this.
@@ -27,40 +27,50 @@ sensor:
 
 template:
   - sensor:
-    - name: SHF Idx # Helper for other sensors to get correct price/rank from array
-      unique_id: shf_helper_idx
-      state: '{{ 0 if state_attr("sensor.shf_electricity_price_now", "data")[0]["DateTime"][8:10] | int == now().day else 24 }}'
+    - name: SHF data # Helper for other sensors to get correct price/rank from array
+      unique_id: shf_data
+      state: 'DATA'
+      availability: '{{ has_value("sensor.shf_electricity_price") }}'
+      attributes:
+        raw: '{{ state_attr("sensor.shf_electricity_price", "data") if state_attr("sensor.shf_electricity_price", "data") else state_attr("sensor.shf_data", "raw") }}'
+        data: >
+          {% set output = namespace(value=[]) %}
+          {% for value in state_attr("sensor.shf_data","raw") | default([], true) %}
+            {% set t = value.DateTime | as_datetime | as_local %}
+            {% if t.hour >= state_attr("input_datetime.shf_price2_start", "hour") and t.hour < state_attr("input_datetime.shf_price2_stop", "hour")%}
+              {% set x = states("input_number.shf_price2_slider") %}
+            {% else %}
+              {% set x = states("input_number.shf_price1_slider") %}
+            {% endif %}
+            {% set price = value.PriceWithTax + x | float %}
+            {% set new_data = dict(value, **{"Timestamp": t | as_timestamp, "TotalPrice": price}) %}
+            {% set output.value = output.value + [new_data] %}
+          {% endfor %}
+          {{ output.value }}
   - sensor:
     - name: SHF Rank now
       unique_id: shf_electricity_rank_now
       unit_of_measurement: Rank
-      state: '{{ state_attr("sensor.shf_electricity_price_now", "data")[states("sensor.shf_idx")|int+now().hour]["Rank"] }}'
+      availability: '{{ state_attr("sensor.shf_data", "data") | selectattr("Timestamp", "lt", now() | as_timestamp) | list | length > 0 }}'
+      state: '{{ (state_attr("sensor.shf_data", "data") | selectattr("Timestamp", "lt", now() | as_timestamp) | list)[-1]["Rank"] }}'
   - sensor:
     - name: SHF Electricity price now
       unique_id: shf_electricity_price_now
       unit_of_measurement: "€/kWh"
       device_class: monetary
-      state: '{{ state_attr("sensor.shf_electricity_price_now", "today_prices")[now().hour] | default(none) }}'
+      state: '{{ (state_attr("sensor.shf_data", "data") | selectattr("Timestamp", "lt", now() | as_timestamp) | list)[-1]["TotalPrice"] | round(4) }}'
+      availability: '{{ state_attr("sensor.shf_data", "data") | selectattr("Timestamp", "ge", now() | as_timestamp ) | list | length > 0 }}'
       attributes:
-        data: '{{ state_attr("sensor.shf_electricity_price", "data") if  state_attr("sensor.shf_electricity_price", "data") else state_attr("sensor.shf_electricity_price_now", "data") }}'
-        all_prices: >
-                   {% set output = namespace(value=[]) %}
-                   {% for value in (state_attr("sensor.shf_electricity_price_now", "data")) | map(attribute="PriceWithTax") | list %}
-                     {% if ((loop.index - 1) % 24) >= state_attr("input_datetime.shf_price2_start", "hour") and ((loop.index - 1) % 24) < state_attr("input_datetime.shf_price2_stop", "hour") %}
-                       {% set output.value = output.value + [ value + states('input_number.shf_price2_slider') | float] %}
-                     {% else %}
-                       {% set output.value = output.value + [ value + states('input_number.shf_price1_slider') | float] %}
-                     {% endif %}
-                   {% endfor %}
-                   {{ output.value if output.value | length > 0 else state_attr("sensor.shf_electricity_price_now", "all_prices") }}
-        today_prices: '{{ (state_attr("sensor.shf_electricity_price_now", "all_prices"))[states("sensor.shf_idx")|int:states("sensor.shf_idx")|int+24] | list }}'
-        tomorrow_prices: '{{ (state_attr("sensor.shf_electricity_price_now", "all_prices"))[states("sensor.shf_idx")|int+24:] | list }}'
-        today_min: '{{ state_attr("sensor.shf_electricity_price_now", "today_prices") | min }}'
-        today_avg: '{{ state_attr("sensor.shf_electricity_price_now", "today_prices") | average | round(4) }}'
-        today_max: '{{ state_attr("sensor.shf_electricity_price_now", "today_prices") | max }}'
-        tomorrow_min: '{{ state_attr("sensor.shf_electricity_price_now", "tomorrow_prices") | min | default(none) }}'
-        tomorrow_avg: '{{ state_attr("sensor.shf_electricity_price_now", "tomorrow_prices") | average(none) }}'
-        tomorrow_max: '{{ state_attr("sensor.shf_electricity_price_now", "tomorrow_prices") | max | default(none) }}'
+        data: '{{ state_attr("sensor.shf_data", "data") }}'
+        all_prices: '{{ state_attr("sensor.shf_data", "data") | selectattr("Timestamp", "ge", today_at("0:00") | as_timestamp) | map(attribute="TotalPrice") |list }}'
+        today_prices: '{{ state_attr("sensor.shf_data", "data") | selectattr("Timestamp", "ge", today_at("0:00") | as_timestamp) | selectattr("Timestamp", "lt", today_at("23:59") | as_timestamp) | map(attribute="TotalPrice") |list }}'
+        tomorrow_prices: '{{ state_attr("sensor.shf_data", "data") | selectattr("Timestamp", "ge", today_at("23:59") | as_timestamp) | map(attribute="TotalPrice") |list }}'
+        today_min: '{{ this.attributes.today_prices | default([0]) | min }}'
+        today_avg: '{{ this.attributes.today_prices | default([0]) | average | round(4) }}'
+        today_max: '{{ this.attributes.today_prices | default([0]) | max }}'
+        tomorrow_min: '{{ this.attributes.tomorrow_prices | default([0], true) | min }}'
+        tomorrow_avg: '{{ this.attributes.tomorrow_prices | default([0], true) | average | round(4) }}'
+        tomorrow_max: '{{ this.attributes.tomorrow_prices | default([0], true) | max }}'
   - sensor:
     - name: SHF Average price today
       unique_id: shf_average_electricity_price
@@ -72,32 +82,17 @@ template:
       unique_id: shf_average_electricity_price_next_hours
       unit_of_measurement: "€/kWh"
       device_class: monetary
+      availability: '{{ has_value("sensor.shf_electricity_price_now") }}'
       state: >
-            {% set idx = states("sensor.shf_idx")|int + now().hour + 1 %}
-            {{ (state_attr("sensor.shf_electricity_price_now", "all_prices"))[idx:idx+states("input_number.shf_price_avg_slider")|int] | average | round(3) }}
-  - sensor:
-    - name: SHF Cheapest period start helper
-      unique_id: shf_cheapest_period_start_helper
-      state: >
-            {% set output = namespace(value=[]) %}
-            {% set data = state_attr("sensor.shf_electricity_price_now", "all_prices")[15:39] %}
-            {% set hours = states("input_number.shf_cheapest_period_slider") | int%}
-            {%- for inval in data[:min(-hours+1, -1)] -%}
-              {% set temp = namespace(value=[]) %}
-              {%- set j = loop.index -1 -%}
-              {%- for i in range(hours) %}
-                {%- set temp.value = temp.value + [data[j+i]] -%}
-              {%- endfor -%}
-              {%- set output.value = output.value + [temp.value | average] -%}
-            {%- endfor -%}
-            {% set data2 = state_attr("sensor.shf_electricity_price_now", "data")[15:39] %}
-            {{ data2[output.value.index(output.value|min)]["DateTime"] }}
+            {% set stop = (now() + timedelta(hours=states("input_number.shf_price_avg_slider")|int)) | as_timestamp  %}
+            {{ state_attr("sensor.shf_data", "data") | selectattr("Timestamp", "ge", now() | as_timestamp) | selectattr("Timestamp", "lt", stop) | map(attribute="TotalPrice") | average | round(3) }}
   - sensor:
     - name: SHF Control Factor 0-1
       unique_id: shf_control_factor_0-1
       unit_of_measurement: factor
       icon: mdi:gauge
-      state: '{{ (states("sensor.shf_control_factor_1") | float /2 + 0.5) | default(none) }}'
+      state: '{{ (states("sensor.shf_control_factor_1") | float(1) /2 + 0.5) }}'
+      availability: '{{ state_attr("sensor.shf_control_factor_1", "today_values") is iterable }}'
       attributes:
         today_values: >
             {% set output = namespace(value=[]) %}
@@ -111,7 +106,8 @@ template:
       unique_id: shf_control_factor_+-1
       unit_of_measurement: factor
       icon: mdi:gauge
-      state: '{{ state_attr("sensor.shf_control_factor_1", "today_values")[now().hour] | default(none) }}'
+      state: '{{ state_attr("sensor.shf_control_factor_1", "today_values")[now().hour] | default(1) }}'
+      availability: '{{ state_attr("sensor.shf_electricity_price_now", "today_prices") is iterable and state_attr("sensor.shf_electricity_price_now", "today_min") and state_attr("sensor.shf_electricity_price_now", "today_max") }}'
       attributes:
         today_values: >
             {% set output = namespace(value=[]) %}
@@ -130,16 +126,14 @@ template:
     - name: "SHF Rank acceptable"
       unique_id: shf_rank_acceptable
       device_class: power
-      state: >
-            {% set value = state_attr("sensor.shf_electricity_price_now", "data")[states("sensor.shf_idx")|int+now().hour] %}
-            {{ value["Rank"] <= states("input_number.shf_rank_slider") | int }}
+      availability: '{{ has_value("sensor.shf_rank_now") }}'
+      state: '{{ states("sensor.shf_rank_now")| int <= states("input_number.shf_rank_slider") | int }}'
   - binary_sensor:
     - name: "SHF Price acceptable"
       unique_id: shf_price_acceptable
       device_class: power
-      state: >
-            {% set value = state_attr("sensor.shf_electricity_price_now", "today_prices")[ now().hour ] %}
-            {{ value <= states("input_number.shf_price_slider") | float }}
+      availability: '{{ has_value("sensor.shf_electricity_price_now") }}'
+      state: '{{ states("sensor.shf_electricity_price_now") | float <= states("input_number.shf_price_slider") | float }}'
   - binary_sensor:
     - name: "SHF Price or Rank acceptable"
       unique_id: shf_price_or_rank_acceptable
@@ -182,13 +176,6 @@ input_number:
     step: 1
     unit_of_measurement: h
     icon: mdi:cash-clock
-  shf_cheapest_period_slider:
-    name: SHF Cheapest period hours
-    min: 1
-    max: 24
-    step: 1
-    unit_of_measurement: h
-    icon: mdi:cash-clock
   shf_control_factor:
     name: SHF Control Factor
     min: 0
@@ -212,10 +199,6 @@ input_number:
     mode: box
 
 input_datetime:
-  shf_cheapest_period_start:
-    name: SHF Cheapest period start
-    has_date: true
-    has_time: true
   shf_price2_start:
     name: SHF Price2 start
     has_date: false
@@ -225,7 +208,7 @@ input_datetime:
     has_date: false
     has_time: true
 
-#Automation for automatic updating of the sensor. Tries to reduce API load.
+# Automation for automatic updating of the sensor. Tries to reduce API load.
 automation:
   - id: '1669453089221'
     alias: Intelligent update of electricity price sensor
@@ -236,7 +219,7 @@ automation:
       alias: Trigger every 15mins
     condition:
     - condition: template
-      value_template: '{{ is_state("sensor.shf_electricity_price", "unavailable") or is_state("sensor.shf_idx", "unavailable") or (now().hour >= 14 and (states("sensor.shf_idx") | int > 0 or state_attr("sensor.shf_electricity_price", "data") | length <= 24)) }}'
+      value_template: '{{ state_attr("sensor.shf_data", "data") | selectattr("Timestamp", "ge", (now() + timedelta(hours=9) )| as_timestamp ) | list | length <= 0 }}'
       alias: Check if there isn't data for tomorrow and time is after 14 o'clock
     action:
     - delay: '{{ range(60, 600)|random }}'
@@ -246,18 +229,54 @@ automation:
       target:
         entity_id: sensor.shf_electricity_price
     mode: single
-  - id: '1669453089222'
-    alias: "Copy cheapest period to datetime sensor"
-    description: "Copies cheapest period start from helper to datetime sensor for easier automations."
-    mode: single
-    trigger:
-      - platform: state
-        entity_id:
-          - sensor.shf_cheapest_period_start_helper
-    condition: []
-    action:
-      - service: input_datetime.set_datetime
-        data:
-          datetime: '{{ states("sensor.shf_cheapest_period_start_helper")[:19] | replace("T", " ") }}'
-        target:
-          entity_id: input_datetime.shf_cheapest_period_start
+
+# Scripts
+script:
+  cheapest_hours:
+    alias: Cheapest hours
+    description: "Returns starting time of cheapest period."
+    fields:
+      start:
+        name: "Start time"
+        description: "Defines the start time for search. Use template."
+        required: true
+        example: "{{ now() }}"
+        selector:
+          datetime:
+      stop:
+        name: "Stop time"
+        description: "Defines the stop time for search. Use template."
+        required: true
+        example: '{{ now() + timedelta(hours=12) }} or {{ today_at("23:00") }}'
+        selector:
+          datetime:
+      hours:
+        name: "Hours"
+        description: "Defines the duration of the desired period."
+        example: "5"
+        required: true
+        selector:
+          number:
+            min: 1
+            max: 48
+    sequence:
+      - variables:
+          start_time: >
+            {% set output = namespace(value=[], tmp = []) %}
+            {% set data = state_attr("sensor.shf_data", "data") | selectattr("Timestamp", "ge", start | as_timestamp) | selectattr("Timestamp", "lt", stop | as_timestamp) | list %}
+            {% set hours = hours if hours is number else hours["hours"] %}
+            {% set hours = min(hours | int, data | length) %}
+            {% for inval in data %}
+              {% set output.tmp = data | selectattr("Timestamp", "ge", inval["Timestamp"]) | selectattr("Timestamp", "lt", inval["Timestamp"] + hours*3600) | list%}
+              {% if output.tmp | length >= hours %}
+                {% set d = dict(inval, **{"PriceTmp": output.tmp | sum(attribute="TotalPrice") }) %}
+                {% set output.value = output.value + [d] %}
+              {% endif %}
+            {%- endfor -%}
+            {% set starttime = (output.value | sort(attribute="PriceTmp"))[0]["Timestamp"] %}
+            {{ { "start" : starttime } }}
+      - stop: Return variable
+        response_variable: start_time
+        enabled: true
+    mode: parallel
+    max: 100
