@@ -32,7 +32,7 @@ homeassistant: # Find this row and if it doesn't exists, you can copypaste this 
 
 ## Margin and transmission fees
 
-If you want, you can add transmission and other extra fees to the spot prices.
+If you want, you can add transmission and other extra fees to the spot prices. Price2 is added to prices between SHF Price2 start and SHF Price2 stop (only hours matter in the UI even though you can set minutes). Outside those hours Price1 will be added and used in the internal logic.
 
 ![Controlling of extra fees](/img/extra-fees.PNG)
 
