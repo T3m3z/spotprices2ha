@@ -1,5 +1,5 @@
 # API.SPOT-HINTA.FI / Electricity Prices to Home Assistant 
-Simple copy-paste approach to fetch Finnish Electricity Spot price data from api.spot-hinta.fi (see this site https://spot-hinta.fi for more info in Finnish) to Home Assistant. Includes simple sensors and UI elements to ease automation work. Intended for beginners who are not familiar with custom components which are more advanced integrations.
+Simple copy-paste approach to fetch Finnish Electricity Spot price data from api.spot-hinta.fi (see this site https://spot-hinta.fi for more info in Finnish and consider supporting that project) to Home Assistant. Includes simple sensors and UI elements to ease automation work. Intended for beginners who are not familiar with custom components which are more advanced integrations.
 
 Example of UI elements (grouping is not included in the package):
 ![Example UI](/img/example.png)
