@@ -1,6 +1,6 @@
 
 # Start pack for Spot Price control.
-# Version 0.2.0
+# Version 0.2.1
 #
 # This is a copy-paste approach in order to get Finnish Electricity Spot Prices to Home Assistant.
 # Initial implementation by Temez but feel free to further develop this.
@@ -228,6 +228,36 @@ automation:
       alias: Trigger the update of the sensor
       target:
         entity_id: sensor.shf_electricity_price
+    mode: single
+  - id: '1671178061951'
+    alias: 'SHF: Validate Price modifiers'
+    description: ''
+    trigger:
+    - platform: state
+      entity_id:
+      - input_datetime.shf_price2_start
+      - input_datetime.shf_price2_stop
+    condition: []
+    action:
+    - service: input_datetime.set_datetime
+      data:
+        time: '{{ state_attr(''input_datetime.shf_price2_stop'', ''hour'') }}:00'
+      target:
+        entity_id: input_datetime.shf_price2_stop
+    - service: input_datetime.set_datetime
+      data:
+        time: '{{ state_attr(''input_datetime.shf_price2_start'', ''hour'') }}:00'
+      target:
+        entity_id: input_datetime.shf_price2_start
+    - if:
+      - condition: template
+        value_template: '{{states(''input_datetime.shf_price2_start'') > states(''input_datetime.shf_price2_stop'')}}'
+      then:
+      - service: input_datetime.set_datetime
+        data:
+          time: '{{ states(''input_datetime.shf_price2_stop'') }}'
+        target:
+          entity_id: input_datetime.shf_price2_start
     mode: single
 
 # Scripts
