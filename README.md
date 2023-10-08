@@ -59,6 +59,7 @@ Sensors are prefixed with "SHF" to prevent collision with possibly pre-existing 
 
 | Version | New features/notes |
 | --- | --- |
+| 0.2.1 | Add validation automation for SHF Price2 start/stop |
 | 0.2.0 | Major rework of the code to address daylight saving time related problems. Reduces errors on System->Logs. New feature: Script can be used to get variable length "cheapest period" with configurable start and end times. Breaking changes: old "SHF Cheapest Period Start" removed due to adding new script based approach. |
 | 0.1.11 | Bugfix as the code was not compatible with HomeAssistant 2023.05+ |
 | 0.1.10 | Fixed rounding error with "SHF Cheapest Period Start". Old code rounded values to 1/10ths of a cent and sometimes this wasn't precise enough causing wrong hour to be selected. |
