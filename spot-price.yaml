@@ -1,6 +1,6 @@
 
 # Start pack for Spot Price control.
-# Version 0.2.2
+# Version 0.2.3
 #
 # This is a copy-paste approach in order to get Finnish Electricity Spot Prices to Home Assistant.
 # Initial implementation by Temez but feel free to further develop this.
@@ -110,7 +110,7 @@ template:
       unit_of_measurement: factor
       icon: mdi:gauge
       state: '{{ state_attr("sensor.shf_control_factor_1", "today_values")[now().hour] | default(1) }}'
-      availability: '{{ state_attr("sensor.shf_electricity_price_now", "today_prices") is iterable and state_attr("sensor.shf_electricity_price_now", "today_min") and state_attr("sensor.shf_electricity_price_now", "today_max") }}'
+      availability: '{{ state_attr("sensor.shf_electricity_price_now", "today_prices") is iterable and state_attr("sensor.shf_electricity_price_now", "today_min") | is_number and state_attr("sensor.shf_electricity_price_now", "today_max") | is_number }}'
       attributes:
         today_values: >
             {% set output = namespace(value=[]) %}
