@@ -59,6 +59,7 @@ Sensors are prefixed with "SHF" to prevent collision with possibly pre-existing 
 
 | Version | New features/notes |
 | --- | --- |
+| 0.2.3 | Fix for "SHF Control Factor" being unavailable if today max/min price is 0 |
 | 0.2.2 | "SHF Rank now" sensor takes now into account transmission fees etc configured using SHF Price 1/2 |
 | 0.2.1 | Add validation automation for SHF Price2 start/stop |
 | 0.2.0 | Major rework of the code to address daylight saving time related problems. Reduces errors on System->Logs. New feature: Script can be used to get variable length "cheapest period" with configurable start and end times. Breaking changes: old "SHF Cheapest Period Start" removed due to adding new script based approach. |
