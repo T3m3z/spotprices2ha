@@ -22,12 +22,18 @@ homeassistant: # Find this row and if it doesn't exists, you can copypaste this 
 
 ## Automation ideas
 
+Rank literally ranks hours during the day. Cheapest one has Rank 1 and the most expensive has Rank 24.
+
 | Use Case / "I want to..."| What sensor to use |
 | --- | --- |
-| ... allow/turn on device during cheapest n hours of the day | Set value of *SHF Max Rank allowed* and use sensor *SHF Rank acceptable* in automations. |
-| ... allow/turn on device when price is below X €/kWh | Set value of *SHF Max Price allowed* and use sensor *SHF Price acceptable* in automations. |
+| ... allow/turn on device during cheapest n hours of the day | Set value of *SHF Max Rank allowed* and use sensor *SHF Rank acceptable* in automations.
+
+Or use sensor "SHF Rank Now" directly and Numeric State trigger in Automations. |
+| ... allow/turn on device when price is below X €/kWh | Set value of *SHF Max Price allowed* and use sensor *SHF Price acceptable* in automations.
+
+Or use sensor "SHF Rank Electricity price now" directly and Numeric State trigger in Automations.|
 | ... allow/turn on device when price is below X €/kWh or during cheapest n hours of the day | Set value of *SHF Max Price allowed* and *SHF Max Rank allowed*. Then use sensor *SHF Price or Rank acceptable* in automations. |
-| ... allow/turn on device when cheapest adjacent n hours starts (today or tomorrow)  | Create a new time helper (Settings->Devices&Services->Helpers->Create Helper->"Date and/or time" + select "Time"). Create automation which updates this helper (see example-of-cheapest-period-automation.yaml for an example). Then use the newly created helper in automations. ![Example Time Trigger based on Datetime helper](/img/example-time-trigger.png) |
+| ... allow/turn on device when cheapest adjacent n hours starts between two times  | Create a new time helper (Settings->Devices&Services->Helpers->Create Helper->"Date and/or time" + select "Time"). Create automation which updates this helper (see example-of-cheapest-period-automation.yaml for an example). Then use the newly created helper in automations. ![Example Time Trigger based on Datetime helper](/img/example-time-trigger.png) |
 | ... continuously control for example a thermostat temperature during the day based on relative difference to the max price of today | Use either sensor *SHF Control Factor 0-1* (outputs number between 0 and 1) or sensor *SHF Control Factor +-1* (outputs number between -1 and +1). You can see the difference between Rank and control factors in the following image. ![Rank versus control factor](/img/rank-versus-controlfactor.PNG) An example of automation action could be something like this: ![Automation action](/img/continuous-control.png) |
 
 ## Margin and transmission fees
