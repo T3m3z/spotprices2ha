@@ -1,0 +1,57 @@
+blueprint:
+  name: "SHF: Adjust Climate entity target temperature based on SHF Control Factor."
+  domain: automation
+  source_url: https://github.com/T3m3z/spotprices2ha/tree/main/blueprints/automation/shf-spotprices2ha/continuous-control.yaml
+  author: shf-spotprices2ha
+  input:
+    min_value:
+      name: Minimum value
+      description: "Minimum value that is going to be set. For example 22 Celsius for heatpump temperature."
+      default: 22
+      selector:
+        number:
+          min: -1000000000
+          max: 1000000000
+          step: "any"
+          mode: box
+    max_raise:
+      name: Maximum raise from minimum value.
+      description: "If minimum value is 22 and maximum raise is 2, then control values will be between 22 and 24."
+      default: 2
+      selector:
+        number:
+          min: -1000000000
+          max: 1000000000
+          step: "any"
+          mode: box
+    entity:
+      name: Entity
+      description: Only used if trigger type is Entity Trigger. Select random entity if using Time Trigger.
+      selector:
+        entity:
+          filter:
+            domain:
+            - climate
+            - input_number
+variables:
+  min_value: !input min_value
+  max_raise: !input max_raise
+  entity: !input entity
+trigger:
+  - platform: state
+    entity_id: sensor.shf_control_factor_0_1
+action:
+  - if:
+      - condition: template
+        value_template: "{{ 'input_number.' in entity }}"
+    then:
+      - service: input_number.set_value
+        entity_id: !input entity
+        data:
+          value: "{{ min_value + states('sensor.shf_control_factor_0_1') | float * max_raise }}"
+    else:
+      - service: climate.set_temperature
+        entity_id: !input entity
+        data:
+          temperature: "{{ min_value + states('sensor.shf_control_factor_0_1') | float * max_raise }}"
+

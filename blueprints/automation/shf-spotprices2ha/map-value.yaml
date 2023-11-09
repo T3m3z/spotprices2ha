@@ -1,0 +1,68 @@
+blueprint:
+  name: "SHF: Map value of an entity and call selected actions"
+  description: Takes an input value from an entity, maps it according to mapping table (input to output, values between set points are linearly calculated) and calls actions. 
+  domain: automation
+  source_url: https://github.com/T3m3z/spotprices2ha/tree/main/blueprints/automation/spotprices2ha/map-value.yaml
+  author: shf-spotprices2ha
+  input:
+    map:
+      name: Mapping array
+      description: "Yaml array which is used for mapping. First value is input value and latter value is output value."
+      default: >
+        {{
+        [
+          (0.01, 22),
+          (0.05, 21),
+          (0.10, 20),
+          (0.20, 18),
+          (0.49, 18),
+          (0.50, 10)
+        ]
+        }}
+      selector:
+        template:
+    precision:
+      name: "Rounding: number of decimals"
+      description: How many decimals should the value variable be rounded to before running actions? Negative values round the value to tens, hundreds and so on.
+      default: 0
+      selector:
+        number:
+          min: -100
+          max: 100
+          step: 1
+          mode: box
+          unit_of_measurement: decimals
+    entity:
+      name: Entity
+      description: "State of this entity is expected to be either int or float and will be mapped according to 'map' setting. State changes of this entity will trigger this automation."
+      default: sensor.shf_electricity_price_now
+      selector:
+        entity:
+    action:
+      name: Action to run
+      description: "This action will be run after mapping. Use template code {{ value }} to get mapped value and use it for example as target temperature of a climate device."
+      default:
+        - service: persistent_notification.create
+          data:
+            title: "Example mapping action"
+            message: "Input is {{ states(entity) }} and output is {{ value }}."
+            notification_id: "example-mapping-persistent-notication"
+      selector:
+        action:
+
+variables:
+  entity: !input entity
+  input: "{{ states(entity) | float }}"
+  map: !input map
+  precision: !input precision
+  value: >
+    {% set map = map | sort(attribute='0') %}
+    {% set value = states(entity) | float %}
+    {% set upper = (map | selectattr("0", 'gt', value) | list) %}
+    {% set lower = (map | selectattr("0", 'le', value) | sort(attribute='0', reverse=True)| list) %}
+    {{ (((value-lower[0][0])*(upper[0][1]-lower[0][1])/(upper[0][0]-lower[0][0]) + lower[0][1]) if upper and lower else map[0 if upper else -1][1]) | round(precision) }}
+
+trigger:
+  - platform: state
+    entity_id: !input entity
+action: !input action

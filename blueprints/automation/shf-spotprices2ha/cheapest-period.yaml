@@ -1,0 +1,106 @@
+blueprint:
+  name: "SHF: Search for cheapest period and run actions when time is reached"
+  description: 'User can select number of adjacent cheapest hours. Automation will store results in selected helper. Automation will run Actions when this time has been reached. In order to use this blueprint, create a input datetime helper (Settings->Devices & Services->Helpers->Create Helper and select "Date and/or Time" and then "Date and time".'
+  domain: automation
+  source_url: https://github.com/T3m3z/spotprices2ha/tree/main/blueprints/automation/spotprices2ha/cheapest-period.yaml
+  author: shf-spotprices2ha
+  input:
+    hours:
+      name: Number of hours
+      description: How many of the cheapest adjacent hours should be searched?
+      default: 3
+      selector:
+        number:
+          min: 1
+          max: 9
+          unit_of_measurement: hours
+    start:
+      name: Start time
+      description: "What is the start time for the search? Template. Examples: {{ now() }} or {{ today_at('15:00') }}."
+      default: "{{ now() }}"
+      selector:
+        template:
+    stop:
+      name: End time
+      description: "What is the end time for the search? Template.  Examples: {{ now() }} or {{ today_at('15:00') + timedelta(hours=12) }}."
+      default: "{{ now() + timedelta(hours=12) }}"
+      selector:
+        template:
+    trigger_type:
+      name: Trigger type
+      description: Select whether calculation of cheapest period should be triggered by time or entity state change. Use extra conditions below to for example make automation calculate cheapest period on in some entity states.
+      selector:
+        select:
+          options:
+            - Time Trigger
+            - Entity Trigger
+    trigger_time:
+      name: When to trigger this?
+      description: Only used if trigger type is Time Trigger.
+      default: 08:00:00
+      selector:
+        time:
+    entity:
+      name: Entity
+      description: Only used if trigger type is Entity Trigger. Select random entity if using Time Trigger.
+      selector:
+        entity:
+    conditions:
+      name: Extra conditions
+      default: []
+      selector:
+        condition:
+    helper:
+      name: Select helper where to store this information
+      description: Create this helper in advance and then use it to store start time of the cheapest adjacent hours.
+      selector:
+        entity:
+          filter:
+            domain: input_datetime
+    action:
+      name: Action to perform
+      description: List of actions that should be executed when time of datetime helper has been reached.
+      selector:
+        action:
+
+variables:
+  trigger_type: !input trigger_type
+
+trigger:
+  - platform: time
+    at: !input trigger_time
+    id: Time Trigger
+  - platform: state
+    entity_id: !input entity
+    id: Entity Trigger
+  - platform: time
+    at: !input helper
+    id: period-start
+condition:
+  - condition: or
+    conditions:
+      - condition: trigger
+        id: period-start
+      - condition: and
+        conditions:
+          - condition: template
+            value_template: "{{ trigger.id == trigger_type }}"
+          - condition: !input conditions
+action:
+  - if:
+    - condition: trigger
+      id:
+        - period-start
+    then: !input action
+    else:
+      - service: script.cheapest_hours
+        data:
+          start: !input start
+          stop: !input stop
+          hours: !input hours
+        response_variable: result
+      - service: input_datetime.set_datetime
+        data:
+          timestamp: "{{ result['start'] }}"
+        target:
+          entity_id: !input helper
