@@ -1,0 +1,82 @@
+blueprint:
+  name: "SHF: Execute action when rank/price conditions match/stop matching"
+  description: User can select parameters and automation will run selected actions when those conditions match/stop matching.
+  domain: automation
+  source_url: https://github.com/T3m3z/spotprices2ha/tree/main/blueprints/automation/spotprices2ha/rank-automation.yaml
+  author: shf-spotprices2ha
+  input:
+    on_attribute:
+      name: When turn on actions should be ran?
+      description: You can specify here whether to check only price or rank or maybe both.
+      selector:
+        select:
+          options:
+            - Price OK
+            - Rank OK
+            - Price or Rank OK
+            - Price and Rank OK
+    rank:
+      name: Number of hours
+      description: How many of the cheapest hours the device should be turned on
+      default: 3
+      selector:
+        number:
+          min: 1
+          max: 23
+          unit_of_measurement: hours
+    price:
+      name: Maximum price allowed
+      description: What is the maximum price allowed?
+      default: 0.1
+      selector:
+        number:
+          min: -1
+          max: 4
+          step: "any"
+          mode: box
+          unit_of_measurement: €/kWh
+    action_on:
+      name: Action to perform when turning on
+      description: List of actions that should be executed when Rank is less or equal to set Rank hours.
+      selector:
+        action:
+    action_off:
+      name: Action to perform when turning off
+      description: List of actions that should be executed when Rank is grater than set Rank hours.
+      selector:
+        action:
+trigger_variables:
+  rank: !input rank
+  price: !input price
+  on_attribute: !input on_attribute
+trigger:
+  - platform: template
+    value_template: >
+      {% if on_attribute == "Price OK" %}
+        {{ states('sensor.shf_electricity_price_now') | float <= price | float }}
+      {% elif on_attribute == "Rank OK" %}
+        {{ states('sensor.shf_rank_now')|float <= rank | float }}
+      {% elif on_attribute == "Price or Rank OK" %}
+        {{ states('sensor.shf_electricity_price_now') | float <= price | float or states('sensor.shf_rank_now')|float <= rank | float }}
+      {% elif on_attribute == "Price and Rank OK" %}
+        {{ states('sensor.shf_electricity_price_now') | float <= price and states('sensor.shf_rank_now')|float <= rank | float }}
+      {% endif %}
+    id: turn-on
+  - platform: template
+    value_template: >
+      {% if on_attribute == "Price OK" %}
+        {{ states('sensor.shf_electricity_price_now') | float > price }}
+      {% elif on_attribute == "Rank OK" %}
+        {{ states('sensor.shf_rank_now')|float > rank }}
+      {% elif on_attribute == "Price or Rank OK" %}
+        {{ states('sensor.shf_electricity_price_now') | float > price and states('sensor.shf_rank_now')|float > rank }}
+      {% elif on_attribute == "Price and Rank OK" %}
+        {{ states('sensor.shf_electricity_price_now') | float > price or states('sensor.shf_rank_now')|float > rank }}
+      {% endif %}
+    id: turn-off
+action:
+  - if:
+      - condition: trigger
+        id: turn-on
+    then: !input action_on
+    else: !input action_off
