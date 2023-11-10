@@ -22,7 +22,7 @@ homeassistant: # Find this row and if it doesn't exists, you can copypaste this 
 
 ## Automation ideas
 
-Check ![blueprints](/blueprints) first to see whether they would fit your use case.
+Check [blueprints](/blueprints) first to see whether they would fit your use case.
 
 Rank literally ranks hours during the day. Cheapest one has Rank 1 and the most expensive has Rank 24.
 
@@ -63,6 +63,7 @@ Sensors are prefixed with "SHF" to prevent collision with possibly pre-existing 
 
 | Version | New features/notes |
 | --- | --- |
+| 0.2.3 + blueprints | Implemented some automation [blueprints](/blueprints) which should help automation building significantly.  |
 | 0.2.3 | Fix for "SHF Control Factor" being unavailable if today max/min price is 0 |
 | 0.2.2 | "SHF Rank now" sensor takes now into account transmission fees etc configured using SHF Price 1/2 |
 | 0.2.1 | Add validation automation for SHF Price2 start/stop |
