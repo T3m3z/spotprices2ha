@@ -49,7 +49,7 @@ template:
             {% endif %}
             {% set factor = this.attributes.price_factor | float %}
             {% set price = (value.PriceWithTax + x | float) * factor  %}
-            {% set new_data = {"Timestamp": t | as_timestamp, "TotalPrice": price, "PriceNoTax": value.PriceNoTax * factor, "PriceWithTax": value.PriceWithTax * factor} %}
+            {% set new_data = {"Timestamp": t | as_timestamp, "TotalPrice": price, "PriceNoTax": value.PriceNoTax * factor, "PriceWithTax": value.PriceWithTax * factor, "Rank": value.Rank} %}
             {% set output.value = output.value + [new_data] %}
           {% endfor %}
           {{ output.value }}
