@@ -5,10 +5,12 @@
 # Initial implementation by Temez but feel free to further develop this.
 # Special thanks to Mikki who has created the API where data is fetched. For more information see https://spot-hinta.fi/
 
-shf_config:
-  price_factor: &price_factor 1 # Change to 100 if using cents instead of € as currency
-  currency_unit: &currency_unit €
-  energy_price_unit: &energy_price_unit €/kWh
+### Currencies
+# Officially this package supports only € as it is the official currency recognized by Home Assistant (see ISO4217 standard).
+# Unofficially you can change the currency of this package by doing the following alterations:
+# 1. Search for &energy_price_unit and change the unit to match your desired one.
+# 2. Search for &currencye_unit and change the unit to match your desired one.
+# 3. Search for price_factor and change it to correctly convert € to your desired unit.
 
 # This is just a loader for the data which is stored in sensor attributes. Template sensors present actual data.
 sensor:
@@ -36,7 +38,7 @@ template:
       state: 'DATA'
       availability: '{{ has_value("sensor.shf_electricity_price") }}'
       attributes:
-        price_factor: *price_factor
+        price_factor: 1 # Change this to 100 if you want c/kWh
         raw: '{{ state_attr("sensor.shf_electricity_price", "data") if state_attr("sensor.shf_electricity_price", "data") else state_attr("sensor.shf_data", "raw") }}'
         data: >
           {% set output = namespace(value=[]) %}
@@ -49,7 +51,7 @@ template:
             {% endif %}
             {% set factor = this.attributes.price_factor | float %}
             {% set price = (value.PriceWithTax + x | float) * factor  %}
-            {% set new_data = {"Timestamp": t | as_timestamp, "TotalPrice": price, "PriceNoTax": value.PriceNoTax * factor, "PriceWithTax": value.PriceWithTax * factor, "Rank": value.Rank} %}
+            {% set new_data = {"Timestamp": t | as_timestamp, "TotalPrice": price, "PriceNoTax": value.PriceNoTax * factor, "PriceWithTax": value.PriceWithTax * factor, "Rank": value.Rank, "DateTime": value.DateTime } %}
             {% set output.value = output.value + [new_data] %}
           {% endfor %}
           {{ output.value }}
@@ -65,7 +67,7 @@ template:
   - sensor:
     - name: SHF Electricity price now
       unique_id: shf_electricity_price_now
-      unit_of_measurement: *energy_price_unit
+      unit_of_measurement: &energy_price_unit €/kWh # Change this to c/kWh if you prefer cents
       device_class: monetary
       state: '{{ (state_attr("sensor.shf_data", "data") | selectattr("Timestamp", "lt", now() | as_timestamp) | list)[-1]["TotalPrice"] | round(4) }}'
       availability: '{{ state_attr("sensor.shf_data", "data") | selectattr("Timestamp", "ge", now() | as_timestamp ) | list | length > 0 }}'
@@ -195,7 +197,7 @@ input_number:
     min: 0
     max: 1000
     step: 0.0001
-    unit_of_measurement: *currency_unit
+    unit_of_measurement: &currency_unit € # Change this to alter currency unit
     icon: mdi:cash-lock
     mode: box
   shf_price2_slider:
