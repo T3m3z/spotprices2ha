@@ -50,7 +50,7 @@ template:
               {% set x = states("input_number.shf_price1_slider") %}
             {% endif %}
             {% set factor = this.attributes.price_factor | float %}
-            {% set price = (value.PriceWithTax + x | float) * factor  %}
+            {% set price = value.PriceWithTax * factor + x | float  %}
             {% set new_data = {"Timestamp": t | as_timestamp, "TotalPrice": price, "PriceNoTax": value.PriceNoTax * factor, "PriceWithTax": value.PriceWithTax * factor, "Rank": value.Rank, "DateTime": value.DateTime } %}
             {% set output.value = output.value + [new_data] %}
           {% endfor %}
