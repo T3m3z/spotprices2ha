@@ -1,8 +1,15 @@
+## Changelog
+# v0.1 2023-12-05 Added "turn off" actions
+
 blueprint:
-  name: "SHF: Search for cheapest period and run actions when time is reached"
-  description: 'User can select number of adjacent cheapest hours. Automation will store results in selected helper. Automation will run Actions when this time has been reached. In order to use this blueprint, create a input datetime helper (Settings->Devices & Services->Helpers->Create Helper and select "Date and/or Time" and then "Date and time".'
+  name: 'SHF: Search for cheapest period and run actions when time is reached'
+  description: User can select number of adjacent cheapest hours. Automation will
+    store results in selected helper. Automation will run Actions when this time has
+    been reached. In order to use this blueprint, create a input datetime helper (Settings->Devices
+    & Services->Helpers->Create Helper and select "Date and/or Time" and then "Date
+    and time".
   domain: automation
-  source_url: https://github.com/T3m3z/spotprices2ha/tree/main/blueprints/automation/spotprices2ha/cheapest-period.yaml
+  source_url: https://github.com/T3m3z/spotprices2ha/tree/main/blueprints/automation/shf-spotprices2ha/cheapest-period.yaml
   author: shf-spotprices2ha
   input:
     hours:
@@ -11,96 +18,128 @@ blueprint:
       default: 3
       selector:
         number:
-          min: 1
-          max: 9
+          min: 1.0
+          max: 9.0
           unit_of_measurement: hours
+          step: 1.0
+          mode: slider
     start:
       name: Start time
-      description: "What is the start time for the search? Template. Examples: {{ now() }} or {{ today_at('15:00') }}."
-      default: "{{ now() }}"
+      description: 'What is the start time for the search? Template. Examples: {{
+        now() }} or {{ today_at(''15:00'') }}.'
+      default: '{{ now() }}'
       selector:
-        template:
+        template: {}
     stop:
       name: End time
-      description: "What is the end time for the search? Template.  Examples: {{ now() }} or {{ today_at('15:00') + timedelta(hours=12) }}."
-      default: "{{ now() + timedelta(hours=12) }}"
+      description: 'What is the end time for the search? Template.  Examples: {{ now()
+        }} or {{ today_at(''15:00'') + timedelta(hours=12) }}.'
+      default: '{{ now() + timedelta(hours=12) }}'
       selector:
-        template:
+        template: {}
     trigger_type:
       name: Trigger type
-      description: Select whether calculation of cheapest period should be triggered by time or entity state change. Use extra conditions below to for example make automation calculate cheapest period on in some entity states.
+      description: Select whether calculation of cheapest period should be triggered
+        by time or entity state change. Use extra conditions below to for example
+        make automation calculate cheapest period on in some entity states.
       selector:
         select:
           options:
-            - Time Trigger
-            - Entity Trigger
+          - Time Trigger
+          - Entity Trigger
+          custom_value: false
+          multiple: false
+          sort: false
     trigger_time:
       name: When to trigger this?
       description: Only used if trigger type is Time Trigger.
       default: 08:00:00
       selector:
-        time:
+        time: {}
     entity:
       name: Entity
-      description: Only used if trigger type is Entity Trigger. Select random entity if using Time Trigger.
+      description: Only used if trigger type is Entity Trigger. Select random entity
+        if using Time Trigger.
       selector:
-        entity:
+        entity: {}
     conditions:
       name: Extra conditions
       default: []
       selector:
-        condition:
+        condition: {}
     helper:
       name: Select helper where to store this information
-      description: Create this helper in advance and then use it to store start time of the cheapest adjacent hours.
+      description: Create this helper in advance and then use it to store start time
+        of the cheapest adjacent hours.
       selector:
         entity:
           filter:
-            domain: input_datetime
-    action:
-      name: Action to perform
-      description: List of actions that should be executed when time of datetime helper has been reached.
+          - domain:
+            - input_datetime
+          multiple: false
+    action_on:
+      name: Action to perform when time period reached
+      description: List of actions that should be executed when time of datetime helper
+        has been reached.
       selector:
-        action:
-
+        action: {}
+    action_off:
+      name: Action to perform when time period ends
+      description: List of actions that should be executed when time of datetime helper + selected amount of hours
+        has been reached.
+      selector:
+        action: {}
 variables:
   trigger_type: !input trigger_type
-
+trigger_variables:
+  helper: !input helper
+  hours: !input hours
 trigger:
-  - platform: time
-    at: !input trigger_time
-    id: Time Trigger
-  - platform: state
-    entity_id: !input entity
-    id: Entity Trigger
-  - platform: time
-    at: !input helper
-    id: period-start
+- platform: time
+  at: !input trigger_time
+  id: Time Trigger
+- platform: state
+  entity_id: !input entity
+  id: Entity Trigger
+- platform: time
+  at: !input helper
+  id: period-start
+- platform: template
+  value_template: " {{ now() > states(helper) | as_datetime | as_local + timedelta(hours=hours)}}"
+  id: period-stop
 condition:
-  - condition: or
+- condition: or
+  conditions:
+  - condition: trigger
+    id: period-start
+  - condition: trigger
+    id: period-stop
+  - condition: and
     conditions:
-      - condition: trigger
-        id: period-start
-      - condition: and
-        conditions:
-          - condition: template
-            value_template: "{{ trigger.id == trigger_type }}"
-          - condition: !input conditions
+    - condition: template
+      value_template: '{{ trigger.id == trigger_type }}'
+    - condition: !input conditions
 action:
+- if:
+  - condition: trigger
+    id:
+    - period-start
+  then: !input action_on
+  else:
   - if:
     - condition: trigger
       id:
-        - period-start
-    then: !input action
+      - period-stop
+    then: !input action_off
     else:
-      - service: script.cheapest_hours
-        data:
-          start: !input start
-          stop: !input stop
-          hours: !input hours
-        response_variable: result
-      - service: input_datetime.set_datetime
-        data:
-          timestamp: "{{ result['start'] }}"
-        target:
-          entity_id: !input helper
+    - service: script.cheapest_hours
+      data:
+        start: !input start
+        stop: !input stop
+        hours: !input hours
+      response_variable: result
+    - service: input_datetime.set_datetime
+      data:
+        timestamp: '{{ result[''start''] }}'
+      target:
+        entity_id: !input helper
