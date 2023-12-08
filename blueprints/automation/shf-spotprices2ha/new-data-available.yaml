@@ -1,0 +1,17 @@
+# Version 0.1
+blueprint:
+  name: "SHF: Execute action when new price data is available"
+  description: User can select actions to be ran when new data is available. Triggered when data is available >24h from now.
+  domain: automation
+  source_url: https://github.com/T3m3z/spotprices2ha/blob/main/blueprints/automation/shf-spotprices2ha/rank-automation.yaml
+  author: shf-spotprices2ha
+  input:
+    action_on:
+      name: Action to perform when new data is available
+      description: List of actions that should be executed when new data is available.
+      selector:
+        action:
+trigger:
+  - platform: template
+    value_template: '{{ state_attr("sensor.shf_data", "data") | selectattr("Timestamp", "ge", (now() + timedelta(hours=24) )| as_timestamp ) | list | length > 0 }}'
+action: !input action_on
