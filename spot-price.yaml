@@ -15,7 +15,7 @@
 # This is just a loader for the data which is stored in sensor attributes. Template sensors present actual data.
 sensor:
   - platform: rest
-    resource: https://api.spot-hinta.fi/TodayAndDayForward?HomeAssistant=true
+    resource: https://api.spot-hinta.fi/TodayAndDayForward?homeassistant15min=true
     name: SHF Electricity price
     unique_id: shf_electricity_price
     scan_interval: 604800 # 7 days, update logic is in the automation
@@ -117,7 +117,9 @@ template:
       unique_id: shf_control_factor_+-1
       unit_of_measurement: factor
       icon: mdi:gauge
-      state: '{{ state_attr("sensor.shf_control_factor_1", "today_values")[now().hour] | default(1) }}'
+      state: >
+          {% set idx = (now().hour*60 + now().minute)//15 %}
+          {{ state_attr("sensor.shf_control_factor_1", "today_values")[idx] | default(1) }}
       availability: '{{ state_attr("sensor.shf_electricity_price_now", "today_prices") is iterable and state_attr("sensor.shf_electricity_price_now", "today_min") | is_number and state_attr("sensor.shf_electricity_price_now", "today_max") | is_number }}'
       attributes:
         today_values: >
@@ -125,7 +127,11 @@ template:
             {% for pnow in state_attr("sensor.shf_electricity_price_now", "today_prices") %}
               {% set pmin = state_attr("sensor.shf_electricity_price_now", "today_min") | float %}
               {% set pmax = state_attr("sensor.shf_electricity_price_now", "today_max") | float %}
-              {% set value = max(min((2*(pmax - pnow) / (pmax - pmin)-1) * states('input_number.shf_control_function_factor') | float,1),-1) %}
+              {% if pmax == pmin %}
+                {% set value = 1 %}
+              {% else %}
+                {% set value = max(min((2*(pmax - pnow) / (pmax - pmin)-1) * states('input_number.shf_control_function_factor') | float,1),-1) %}
+              {% endif %}
               {% if states("input_select.shf_control_function" ) == "Linear"  %}
                 {% set output.value = output.value + [value | round(2)] %}
               {% else %}
@@ -170,7 +176,7 @@ input_number:
   shf_rank_slider:
     name: SHF Max Rank allowed
     min: 1
-    max: 24
+    max: 96
     step: 1
   shf_price_slider:
     name: SHF Max Price allowed
@@ -184,7 +190,7 @@ input_number:
     name: SHF Average price hours
     min: 1
     max: 24
-    step: 1
+    step: 0.25
     unit_of_measurement: h
     icon: mdi:cash-clock
   shf_control_factor:
@@ -293,12 +299,12 @@ script:
           datetime:
       hours:
         name: "Hours"
-        description: "Defines the duration of the desired period."
+        description: "Defines the duration of the desired period in 0.25h increments."
         example: "5"
         required: true
         selector:
           number:
-            min: 1
+            min: 0.25
             max: 48
     sequence:
       - variables:
@@ -306,16 +312,16 @@ script:
             {% set output = namespace(value=[], tmp = []) %}
             {% set data = state_attr("sensor.shf_data", "data") | selectattr("Timestamp", "ge", start | as_timestamp) | selectattr("Timestamp", "lt", stop | as_timestamp) | list %}
             {% set hours = hours if hours is number else hours["hours"] %}
-            {% set hours = min(hours | int, data | length) %}
+            {% set steps = min((hours/0.25) | int, data | length) %}
             {% for inval in data %}
-              {% set output.tmp = data | selectattr("Timestamp", "ge", inval["Timestamp"]) | selectattr("Timestamp", "lt", inval["Timestamp"] + hours*3600) | list%}
-              {% if output.tmp | length >= hours %}
+              {% set output.tmp = data | selectattr("Timestamp", "ge", inval["Timestamp"]) | selectattr("Timestamp", "lt", inval["Timestamp"] + steps*900) | list%}
+              {% if output.tmp | length >= steps %}
                 {% set d = dict(inval, **{"PriceTmp": output.tmp | sum(attribute="TotalPrice") / output.tmp | length }) %}
                 {% set output.value = output.value + [d] %}
               {% endif %}
             {%- endfor -%}
             {% set obj = (output.value | sort(attribute="PriceTmp"))[0] %}
-            {{ { "start" : obj["Timestamp"], "stop": obj["Timestamp"] + hours*3600, "avgPrice": obj["PriceTmp"] } }}
+            {{ { "start" : obj["Timestamp"], "stop": obj["Timestamp"] + steps*900, "avgPrice": obj["PriceTmp"] } }}
       - stop: Return variable
         response_variable: start_time
         enabled: true
