@@ -154,8 +154,8 @@ template:
     - name: "SHF Rank acceptable"
       unique_id: shf_rank_acceptable
       device_class: power
-      availability: '{{ has_value("sensor.shf_rank_now") }}'
-      state: '{{ states("sensor.shf_rank_now")| int <= states("input_number.shf_rank_slider") | int }}'
+      availability: '{{ has_value("sensor.shf_electricity_rank_now") }}'
+      state: '{{ states("sensor.shf_electricity_rank_now") | int <= states("input_number.shf_rank_slider") | int }}'
   - binary_sensor:
     - name: "SHF Price acceptable"
       unique_id: shf_price_acceptable
