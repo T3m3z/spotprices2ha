@@ -61,9 +61,20 @@ template:
       unit_of_measurement: Rank
       availability: '{{ state_attr("sensor.shf_data", "data") | selectattr("Timestamp", "lt", now() | as_timestamp) | list | length > 0 }}'
       state: >
-        {% set today = state_attr('sensor.shf_data', 'data') | selectattr("Timestamp", "lt", today_at("23:59") | as_timestamp) | selectattr("Timestamp", "ge", today_at("0:00") | as_timestamp) %}
-        {% set n = state_attr('sensor.shf_data', 'data') | selectattr("Timestamp", "le", now() | as_timestamp) | last | list %}
-        {{ (today | sort(attribute="TotalPrice")).index(n) + 1 }}
+        {% set today = state_attr('sensor.shf_data', 'data')
+          | selectattr("Timestamp", "lt", today_at("23:59") | as_timestamp)
+          | selectattr("Timestamp", "ge", today_at("0:00") | as_timestamp)
+          | list %}
+        {% set sorted_today = today | sort(attribute="TotalPrice") %}
+        {% set n = (state_attr('sensor.shf_data', 'data')
+          | selectattr("Timestamp", "le", now() | as_timestamp)
+          | list
+          | last) %}
+        {% if n is defined and n in sorted_today %}
+          {{ sorted_today.index(n) + 1 }}
+        {% else %}
+          0
+        {% endif %} 
   - sensor:
     - name: SHF Electricity price now
       unique_id: shf_electricity_price_now
