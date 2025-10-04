@@ -62,7 +62,7 @@ template:
       availability: '{{ state_attr("sensor.shf_data", "data") | selectattr("Timestamp", "lt", now() | as_timestamp) | list | length > 0 }}'
       state: >
         {% set today = state_attr('sensor.shf_data', 'data') | selectattr("Timestamp", "lt", today_at("23:59") | as_timestamp) | selectattr("Timestamp", "ge", today_at("0:00") | as_timestamp) %}
-        {% set n = state_attr('sensor.shf_data', 'data') | selectattr("Timestamp", "le", now() | as_timestamp) | last | list %}
+        {% set n = state_attr('sensor.shf_data', 'data') | selectattr("Timestamp", "le", now() | as_timestamp) | list | last %}
         {{ (today | sort(attribute="TotalPrice")).index(n) + 1 }}
   - sensor:
     - name: SHF Electricity price now
