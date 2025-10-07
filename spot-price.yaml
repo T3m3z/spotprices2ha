@@ -1,5 +1,5 @@
 # Start pack for Spot Price control.
-# Version 0.2.5
+# Version 0.2.5.1
 #
 # This is a copy-paste approach in order to get Finnish Electricity Spot Prices to Home Assistant.
 # Initial implementation by Temez but feel free to further develop this.
@@ -59,7 +59,7 @@ template:
     - name: SHF Rank now
       unique_id: shf_electricity_rank_now
       unit_of_measurement: Rank
-      availability: '{{ state_attr("sensor.shf_data", "data") | selectattr("Timestamp", "lt", now() | as_timestamp) | list | length > 0 }}'
+      availability: '{{ state_attr("sensor.shf_data", "data") | selectattr("Timestamp", "le", now() | as_timestamp) | list | length > 0 }}'
       state: >
         {% set today = state_attr('sensor.shf_data', 'data') | selectattr("Timestamp", "lt", today_at("23:59") | as_timestamp) | selectattr("Timestamp", "ge", today_at("0:00") | as_timestamp) %}
         {% set n = state_attr('sensor.shf_data', 'data') | selectattr("Timestamp", "le", now() | as_timestamp) | list | last %}
